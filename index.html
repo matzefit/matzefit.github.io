@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matthias Fürst — Geospatial Data Science</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #06090f;
+    --bg2: #0d1420;
+    --bg3: #111b2e;
+    --text: #e8eefc;
+    --muted: #7a8eb0;
+    --accent1: #0057ff;
+    --accent2: #00c8a0;
+    --accent3: #ff6b35;
+    --accent4: #ffe566;
+    --border: rgba(120,160,255,0.12);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Fraunces', serif;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .contour-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.18;
+  }
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2.5rem;
+    background: rgba(6,9,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+  .hero {
+    padding: 7rem 0 5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+  .hero-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 1.2rem;
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 em { font-style: italic; color: var(--accent2); }
+  .hero-desc {
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 380px;
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+  .hero-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 0.5px solid var(--border);
+    color: var(--muted);
+    border-radius: 2px;
+  }
+  .temp-scale {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+  .scale-bar {
+    width: 28px;
+    height: 320px;
+    border-radius: 2px;
+    background: linear-gradient(to top, #0057ff 0%, #00c8a0 25%, #ffe566 55%, #ff6b35 80%, #ff2d6e 100%);
+    margin-left: auto;
+    margin-bottom: 8px;
+    opacity: 0.85;
+  }
+  .scale-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 320px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-right: 36px;
+  }
+  .scale-wrap { display: flex; gap: 4px; align-items: flex-start; justify-content: flex-end; }
+  .scale-title {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-align: right;
+    opacity: 0.6;
+  }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-top: 4rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .section-num { font-size: 10px; letter-spacing: 0.15em; color: var(--accent2); opacity: 0.7; }
+  .section-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; font-style: italic; color: var(--text); }
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 0.5px solid var(--border);
+  }
+  .project-card {
+    background: var(--bg);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+  .project-card:hover { background: var(--bg2); }
+  .project-heat { width: 32px; height: 4px; border-radius: 2px; margin-bottom: 0.5rem; }
+  .project-card h3 { font-family: var(--serif); font-size: 1rem; font-weight: 300; line-height: 1.3; color: var(--text); }
+  .project-desc { font-size: 12px; color: var(--muted); line-height: 1.7; flex: 1; }
+  .project-links { display: flex; gap: 12px; margin-top: 0.5rem; }
+  .plink {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 0.5px solid var(--border);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .plink:hover { color: var(--accent2); border-color: var(--accent2); }
+  .plink.pdf::before { content: '↓ '; }
+  .plink.repo::before { content: '↗ '; }
+  .about-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; align-items: start; }
+  .about-text p { color: var(--muted); line-height: 1.9; margin-bottom: 1rem; font-size: 13px; }
+  .about-text p strong { color: var(--text); font-weight: 400; }
+  .about-stats { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 0.5px solid var(--border); }
+  .stat-row { background: var(--bg); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); opacity: 0.6; margin-bottom: 3px; }
+  .stat-value { font-size: 13px; color: var(--text); }
+  .pub-list { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 0.5px solid var(--border); }
+  .pub-item { background: var(--bg); padding: 1.5rem 1.75rem; display: flex; gap: 1.5rem; align-items: flex-start; transition: background 0.2s; }
+  .pub-item:hover { background: var(--bg2); }
+  .pub-year { font-size: 11px; color: var(--accent2); opacity: 0.7; min-width: 36px; padding-top: 2px; }
+  .pub-title { font-size: 13px; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+  .pub-venue { font-size: 11px; color: var(--muted); font-style: italic; }
+  .contact-row { display: flex; gap: 1px; background: var(--border); border: 0.5px solid var(--border); }
+  .contact-item {
+    flex: 1;
+    background: var(--bg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+  .contact-item:hover { background: var(--bg2); }
+  .contact-type { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); opacity: 0.6; }
+  .contact-val { font-size: 13px; color: var(--text); }
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 2.5rem;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  footer p { font-size: 10px; color: var(--muted); opacity: 0.5; letter-spacing: 0.08em; }
+  @keyframes drift { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
+  @keyframes drift2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(12px)} }
+  .cl1 { animation: drift 18s ease-in-out infinite; }
+  .cl2 { animation: drift2 22s ease-in-out infinite; }
+  .cl3 { animation: drift 14s ease-in-out infinite 4s; }
+</style>
+</head>
+<body>
+
+<svg class="contour-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <g class="cl1">
+    <ellipse cx="320" cy="400" rx="520" ry="180" fill="none" stroke="#0057ff" stroke-width="1"/>
+    <ellipse cx="320" cy="400" rx="440" ry="140" fill="none" stroke="#0082ff" stroke-width="0.7"/>
+    <ellipse cx="320" cy="400" rx="360" ry="100" fill="none" stroke="#00aeff" stroke-width="0.5"/>
+    <ellipse cx="320" cy="400" rx="270" ry="65" fill="none" stroke="#00c8a0" stroke-width="0.7"/>
+    <ellipse cx="320" cy="400" rx="180" ry="38" fill="none" stroke="#ffe566" stroke-width="0.5"/>
+    <ellipse cx="320" cy="400" rx="90" ry="16" fill="none" stroke="#ff6b35" stroke-width="0.6"/>
+  </g>
+  <g class="cl2">
+    <ellipse cx="1100" cy="280" rx="480" ry="200" fill="none" stroke="#0057ff" stroke-width="0.8"/>
+    <ellipse cx="1100" cy="280" rx="390" ry="155" fill="none" stroke="#00c8a0" stroke-width="0.6"/>
+    <ellipse cx="1100" cy="280" rx="290" ry="105" fill="none" stroke="#ffe566" stroke-width="0.5"/>
+    <ellipse cx="1100" cy="280" rx="190" ry="60" fill="none" stroke="#ff6b35" stroke-width="0.7"/>
+    <ellipse cx="1100" cy="280" rx="95" ry="25" fill="none" stroke="#ff2d6e" stroke-width="0.5"/>
+  </g>
+  <g class="cl3">
+    <ellipse cx="750" cy="700" rx="560" ry="150" fill="none" stroke="#0082ff" stroke-width="0.6"/>
+    <ellipse cx="750" cy="700" rx="460" ry="110" fill="none" stroke="#00c8a0" stroke-width="0.5"/>
+    <ellipse cx="750" cy="700" rx="340" ry="72" fill="none" stroke="#ffe566" stroke-width="0.6"/>
+    <ellipse cx="750" cy="700" rx="210" ry="40" fill="none" stroke="#ff6b35" stroke-width="0.5"/>
+  </g>
+  <line x1="0" y1="220" x2="1440" y2="220" stroke="#7a8eb0" stroke-width="0.3" stroke-dasharray="2 8"/>
+  <line x1="0" y1="450" x2="1440" y2="450" stroke="#7a8eb0" stroke-width="0.3" stroke-dasharray="2 8"/>
+  <line x1="0" y1="680" x2="1440" y2="680" stroke="#7a8eb0" stroke-width="0.3" stroke-dasharray="2 8"/>
+  <line x1="360" y1="0" x2="360" y2="900" stroke="#7a8eb0" stroke-width="0.3" stroke-dasharray="2 8"/>
+  <line x1="720" y1="0" x2="720" y2="900" stroke="#7a8eb0" stroke-width="0.3" stroke-dasharray="2 8"/>
+  <line x1="1080" y1="0" x2="1080" y2="900" stroke="#7a8eb0" stroke-width="0.3" stroke-dasharray="2 8"/>
+</svg>
+
+<nav>
+  <div class="nav-logo">Matthias Fürst</div>
+  <ul class="nav-links">
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#publications">Publications</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="hero">
+    <div>
+      <p class="hero-label">Urban Systems / Geospatial Science</p>
+      <h1>Spatial data<br>meets <em>urban climate</em></h1>
+      <p class="hero-desc">PhD in Urban Systems (NYU Tandon, 2026). I build geospatial pipelines, CFD microclimate models, and GeoAI systems for cities.</p>
+      <div class="hero-tags">
+        <span class="tag">CFD / ANSYS Fluent</span>
+        <span class="tag">GeoAI</span>
+        <span class="tag">Remote Sensing</span>
+        <span class="tag">Python · GeoPandas</span>
+        <span class="tag">Google Earth Engine</span>
+        <span class="tag">PostGIS</span>
+      </div>
+    </div>
+    <div class="temp-scale">
+      <p class="scale-title">Surface temperature (°C)</p>
+      <div class="scale-wrap">
+        <div class="scale-labels">
+          <span>42+</span><span>36</span><span>30</span><span>24</span><span>18</span>
+        </div>
+        <div class="scale-bar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">Projects</h2>
+    </div>
+    <div class="projects-grid">
+      <div class="project-card">
+        <div class="project-heat" style="background: linear-gradient(to right, #0057ff, #ff6b35)"></div>
+        <h3>Urban Heat Island Simulation — Abu Dhabi</h3>
+        <p class="project-desc">CFD microclimate modeling in ANSYS Fluent. Wind flow and surface temperature fields across dense urban morphologies in an arid climate.</p>
+        <div class="project-links">
+          <a href="#" class="plink pdf">Report</a>
+          <a href="#" class="plink repo">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-heat" style="background: linear-gradient(to right, #00c8a0, #ffe566)"></div>
+        <h3>GeoAI Land Cover Classification — U-Net on Satellite Imagery</h3>
+        <p class="project-desc">Semantic segmentation of high-resolution multispectral imagery using U-Net. Trained and validated across Singapore urban typologies.</p>
+        <div class="project-links">
+          <a href="#" class="plink pdf">Report</a>
+          <a href="#" class="plink repo">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-heat" style="background: linear-gradient(to right, #ffe566, #ff2d6e)"></div>
+        <h3>Nature-Based Cooling Strategies — Urban Greening Scenarios</h3>
+        <p class="project-desc">Parametric analysis of green infrastructure interventions on pedestrian thermal comfort. Street canyon modeling with vegetation.</p>
+        <div class="project-links">
+          <a href="#" class="plink pdf">Report</a>
+          <a href="#" class="plink repo">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-heat" style="background: linear-gradient(to right, #0057ff, #00c8a0)"></div>
+        <h3>Rooftop PV Potential Mapping — NYC</h3>
+        <p class="project-desc">Large-scale solar suitability analysis using LiDAR DSM, GEE, and Random Forest classification. Citywide rooftop inventory with irradiance estimates.</p>
+        <div class="project-links">
+          <a href="#" class="plink pdf">Report</a>
+          <a href="#" class="plink repo">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-heat" style="background: linear-gradient(to right, #00c8a0, #0057ff)"></div>
+        <h3>Street-Level Urban Morphology from Street View</h3>
+        <p class="project-desc">ResNet-based classification of urban canyon geometry from Google Street View panoramas. Sky View Factor estimation at scale.</p>
+        <div class="project-links">
+          <a href="#" class="plink pdf">Report</a>
+          <a href="#" class="plink repo">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-heat" style="background: linear-gradient(to right, #ff6b35, #ffe566)"></div>
+        <h3>Utility Network GIS — Infrastructure Database</h3>
+        <p class="project-desc">Geospatial database design and migration for utility asset management. PostGIS pipeline with automated topology validation.</p>
+        <div class="project-links">
+          <a href="#" class="plink pdf">Report</a>
+          <a href="#" class="plink repo">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">About</h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>I am a geospatial data scientist and urban researcher with a background spanning <strong>land surveying, photogrammetry, remote sensing, and computational fluid dynamics</strong>. My PhD at NYU Tandon focused on microclimate modeling and GeoAI applications in dense urban environments.</p>
+        <p>My work sits at the intersection of <strong>physical simulation and machine learning</strong> — using CFD to generate ground-truth thermal fields, then training spatial models to predict and generalize at city scale. I have worked across Singapore, Abu Dhabi, and New York.</p>
+        <p>I am interested in roles combining <strong>geospatial engineering, climate risk analysis, and applied AI</strong> — especially where the output has direct operational or planning value.</p>
+      </div>
+      <div>
+        <div class="about-stats">
+          <div class="stat-row">
+            <p class="stat-label">Degree</p>
+            <p class="stat-value">PhD Urban Systems — NYU Tandon, 2026</p>
+          </div>
+          <div class="stat-row">
+            <p class="stat-label">Previous</p>
+            <p class="stat-value">M.Sc. Photogrammetry & Geoinformatics — HfT Stuttgart</p>
+          </div>
+          <div class="stat-row">
+            <p class="stat-label">Experience</p>
+            <p class="stat-value">Singapore · Abu Dhabi · New York</p>
+          </div>
+          <div class="stat-row">
+            <p class="stat-label">Authorization</p>
+            <p class="stat-value">STEM OPT — 36-month US work authorization</p>
+          </div>
+          <div class="stat-row">
+            <p class="stat-label">Languages</p>
+            <p class="stat-value">German (native) · English (fluent)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="publications">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Publications</h2>
+    </div>
+    <div class="pub-list">
+      <div class="pub-item">
+        <span class="pub-year">2025</span>
+        <div class="pub-content">
+          <p class="pub-title">Add your publication title here</p>
+          <p class="pub-venue">Journal / Conference · DOI link</p>
+        </div>
+      </div>
+      <div class="pub-item">
+        <span class="pub-year">2024</span>
+        <div class="pub-content">
+          <p class="pub-title">Add your publication title here</p>
+          <p class="pub-venue">Journal / Conference · DOI link</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Contact</h2>
+    </div>
+    <div class="contact-row">
+      <a href="mailto:mxf4167@nyu.edu" class="contact-item">
+        <span class="contact-type">Email</span>
+        <span class="contact-val">mxf4167@nyu.edu</span>
+      </a>
+      <a href="https://linkedin.com/in/YOUR-HANDLE" class="contact-item">
+        <span class="contact-type">LinkedIn</span>
+        <span class="contact-val">linkedin.com/in/...</span>
+      </a>
+      <a href="https://github.com/YOUR-USERNAME" class="contact-item">
+        <span class="contact-type">GitHub</span>
+        <span class="contact-val">github.com/...</span>
+      </a>
+      <a href="cv.pdf" class="contact-item">
+        <span class="contact-type">CV</span>
+        <span class="contact-val">Download PDF ↓</span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Matthias Fürst · Geospatial Data Science & Urban Climate</p>
+  <p>2026</p>
+</footer>
+
+</body>
+</html>
