@@ -204,8 +204,35 @@
   .pub-item { background: var(--bg); padding: 1.5rem 1.75rem; display: flex; gap: 1.5rem; align-items: flex-start; transition: background 0.2s; }
   .pub-item:hover { background: var(--bg2); }
   .pub-year { font-size: 11px; color: var(--accent2); opacity: 0.7; min-width: 36px; padding-top: 2px; }
-  .pub-title { font-size: 13px; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+  .pub-content { display: flex; flex-direction: column; gap: 3px; }
+  .pub-title { font-size: 13px; color: var(--text); margin-bottom: 2px; line-height: 1.4; }
+  .pub-authors { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
   .pub-venue { font-size: 11px; color: var(--muted); font-style: italic; }
+  .pub-tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-bottom: 6px;
+  }
+  .tag-journal    { background: rgba(0, 87, 255, 0.15); color: #5b9aff; }
+  .tag-conference { background: rgba(255, 107, 53, 0.15); color: #ff9066; }
+  .tag-thesis     { background: rgba(0, 200, 160, 0.15); color: #00c8a0; }
+  .tag-report     { background: rgba(255, 229, 102, 0.15); color: #ffe566; }
+  .pub-doi {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 0.5px solid var(--border);
+    padding-bottom: 1px;
+    margin-top: 4px;
+    display: inline-block;
+    transition: color 0.2s;
+  }
+  .pub-doi:hover { color: var(--accent2); }
   .contact-row { display: flex; gap: 1px; background: var(--border); border: 0.5px solid var(--border); }
   .contact-item {
     flex: 1;
@@ -316,8 +343,8 @@
         <h3>Urban Heat Island Simulation — Abu Dhabi</h3>
         <p class="project-desc">CFD microclimate modeling in ANSYS Fluent. Wind flow and surface temperature fields across dense urban morphologies in an arid climate.</p>
         <div class="project-links">
-          <a href="#" class="plink pdf">Report</a>
-          <a href="#" class="plink repo">GitHub</a>
+          <a href="#" class="plink pdf" target="_blank">Report</a>
+          <a href="#" class="plink repo" target="_blank">GitHub</a>
         </div>
       </div>
       <div class="project-card">
@@ -325,8 +352,8 @@
         <h3>GeoAI Land Cover Classification — U-Net on Satellite Imagery</h3>
         <p class="project-desc">Semantic segmentation of high-resolution multispectral imagery using U-Net. Trained and validated across Singapore urban typologies.</p>
         <div class="project-links">
-          <a href="#" class="plink pdf">Report</a>
-          <a href="#" class="plink repo">GitHub</a>
+          <a href="#" class="plink pdf" target="_blank">Report</a>
+          <a href="#" class="plink repo" target="_blank">GitHub</a>
         </div>
       </div>
       <div class="project-card">
@@ -334,8 +361,8 @@
         <h3>Nature-Based Cooling Strategies — Urban Greening Scenarios</h3>
         <p class="project-desc">Parametric analysis of green infrastructure interventions on pedestrian thermal comfort. Street canyon modeling with vegetation.</p>
         <div class="project-links">
-          <a href="#" class="plink pdf">Report</a>
-          <a href="#" class="plink repo">GitHub</a>
+          <a href="#" class="plink pdf" target="_blank">Report</a>
+          <a href="#" class="plink repo" target="_blank">GitHub</a>
         </div>
       </div>
       <div class="project-card">
@@ -343,8 +370,8 @@
         <h3>Rooftop PV Potential Mapping — NYC</h3>
         <p class="project-desc">Large-scale solar suitability analysis using LiDAR DSM, GEE, and Random Forest classification. Citywide rooftop inventory with irradiance estimates.</p>
         <div class="project-links">
-          <a href="#" class="plink pdf">Report</a>
-          <a href="#" class="plink repo">GitHub</a>
+          <a href="#" class="plink pdf" target="_blank">Report</a>
+          <a href="#" class="plink repo" target="_blank">GitHub</a>
         </div>
       </div>
       <div class="project-card">
@@ -352,8 +379,8 @@
         <h3>Street-Level Urban Morphology from Street View</h3>
         <p class="project-desc">ResNet-based classification of urban canyon geometry from Google Street View panoramas. Sky View Factor estimation at scale.</p>
         <div class="project-links">
-          <a href="#" class="plink pdf">Report</a>
-          <a href="#" class="plink repo">GitHub</a>
+          <a href="#" class="plink pdf" target="_blank">Report</a>
+          <a href="#" class="plink repo" target="_blank">GitHub</a>
         </div>
       </div>
       <div class="project-card">
@@ -361,8 +388,8 @@
         <h3>Utility Network GIS — Infrastructure Database</h3>
         <p class="project-desc">Geospatial database design and migration for utility asset management. PostGIS pipeline with automated topology validation.</p>
         <div class="project-links">
-          <a href="#" class="plink pdf">Report</a>
-          <a href="#" class="plink repo">GitHub</a>
+          <a href="#" class="plink pdf" target="_blank">Report</a>
+          <a href="#" class="plink repo" target="_blank">GitHub</a>
         </div>
       </div>
     </div>
@@ -412,20 +439,110 @@
       <h2 class="section-title">Publications</h2>
     </div>
     <div class="pub-list">
+
+      <div class="pub-item">
+        <span class="pub-year">2026</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-conference">Conference</span>
+          <p class="pub-title">On the Prediction of Failure of Power Transmission Lines in Complex Islanded Tropical Terrains</p>
+          <p class="pub-authors">BVM Cruz, JP Montoya, FB Oppong, V Gade, N Vargas, M Fitzky et al.</p>
+          <p class="pub-venue">106th AMS Annual Meeting</p>
+        </div>
+      </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2026</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-thesis">Thesis</span>
+          <p class="pub-title">A Computational Framework for Rapid Prediction of Human Thermal Exposure in Complex Built Environments</p>
+          <p class="pub-authors">M Fitzky</p>
+          <p class="pub-venue">New York University Tandon School of Engineering</p>
+        </div>
+      </div>
+
       <div class="pub-item">
         <span class="pub-year">2025</span>
         <div class="pub-content">
-          <p class="pub-title">Add your publication title here</p>
-          <p class="pub-venue">Journal / Conference · DOI link</p>
+          <span class="pub-tag tag-journal">Journal</span>
+          <p class="pub-title">A synoptic analysis of the effect of radiance on human perceived temperature</p>
+          <p class="pub-authors">M Fitzky, J Brozovsky, M Ghandehari</p>
+          <p class="pub-venue">Energy and Buildings 346, 116161</p>
+          <a href="https://doi.org/10.1016/j.enbuild.2025.116161" class="pub-doi" target="_blank">DOI ↗</a>
         </div>
       </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2025</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-journal">Journal</span>
+          <p class="pub-title">Climate Action in Islanded Jurisdictions: A Comparative Case Study of Renewable Portfolio Standards in Puerto Rico and Hawaii</p>
+          <p class="pub-authors">R Brenner, M Fitzky, K Hertz, T Lan, V Rinaldi, A Vadali, M Ghandehari</p>
+          <p class="pub-venue">Energy Strategy Reviews 62, 101946</p>
+          <a href="https://doi.org/10.1016/j.esr.2025.101946" class="pub-doi" target="_blank">DOI ↗</a>
+        </div>
+      </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2025</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-conference">Conference</span>
+          <p class="pub-title">Modeling Human Thermal Experience in the Urban Microclimate</p>
+          <p class="pub-authors">M Fitzky, M Ghandehari</p>
+          <p class="pub-venue">12th International Conference on Urban Climate (ICUC12), Rotterdam</p>
+        </div>
+      </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2025</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-conference">Conference</span>
+          <p class="pub-title">Multi-Physics Analysis of Cooling Effects of Green Spaces: Case Study in Brooklyn, New York</p>
+          <p class="pub-authors">S Yamada, M Ghandehari, M Fitzky</p>
+          <p class="pub-venue">12th International Conference on Urban Climate (ICUC12), Rotterdam</p>
+        </div>
+      </div>
+
       <div class="pub-item">
         <span class="pub-year">2024</span>
         <div class="pub-content">
-          <p class="pub-title">Add your publication title here</p>
-          <p class="pub-venue">Journal / Conference · DOI link</p>
+          <span class="pub-tag tag-conference">Conference</span>
+          <p class="pub-title">High Performance Computing for Simulation of the Urban Microclimate</p>
+          <p class="pub-authors">M Fitzky, B Peng, V Rinaldi, M Ghandehari</p>
+          <p class="pub-venue">104th Annual AMS Meeting 2024, 439880</p>
         </div>
       </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2022</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-report">Report</span>
+          <p class="pub-title">Comparative Analysis of Different Methodologies and Datasets for Energy Performance Labelling of Buildings</p>
+          <p class="pub-authors">G Martirano, F Pignatelli, F Vinci, C Struck, V Coors, M Fitzky et al.</p>
+          <p class="pub-venue">Publications Office of the European Union, Luxembourg</p>
+        </div>
+      </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2020</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-journal">Journal</span>
+          <p class="pub-title">Developing Web-Based 3D Health-Aware Routing for Pedestrians and Cyclists</p>
+          <p class="pub-authors">R Sihombing, SK Sini, M Fitzky</p>
+          <p class="pub-venue">E3S Web of Conferences 171, 02009</p>
+          <a href="https://doi.org/10.1051/e3sconf/202017102009" class="pub-doi" target="_blank">DOI ↗</a>
+        </div>
+      </div>
+
+      <div class="pub-item">
+        <span class="pub-year">2018</span>
+        <div class="pub-content">
+          <span class="pub-tag tag-conference">Conference</span>
+          <p class="pub-title">Building Energy Consumption Modeling at Urban Scale: Three Case Studies in Europe for Residential Buildings</p>
+          <p class="pub-authors">G Mutani, V Todeschi, J Kämpf, V Coors, M Fitzky</p>
+          <p class="pub-venue">IEEE International Telecommunications Energy Conference (INTELEC), 1–8</p>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -441,13 +558,13 @@
       </a>
       <a target="_blank" href="https://www.linkedin.com/in/matthias-fitzky-phd-268ab3139/" class="contact-item">
         <span class="contact-type">LinkedIn</span>
-        <span class="contact-val">linkedin.com/in/matthias-fitzky-phd-268ab3139/</span>
+        <span class="contact-val">linkedin.com/in/matthias-fitzky-phd</span>
       </a>
       <a target="_blank" href="https://github.com/matzefit" class="contact-item">
         <span class="contact-type">GitHub</span>
         <span class="contact-val">github.com/matzefit</span>
       </a>
-      <a target="_blank" href="CV/CV Matthias Fitzky MF_18032026.pdf" class="contact-item">
+      <a target="_blank" href="CV/CV-Matthias-Fitzky.pdf" class="contact-item">
         <span class="contact-type">CV</span>
         <span class="contact-val">Download PDF ↓</span>
       </a>
