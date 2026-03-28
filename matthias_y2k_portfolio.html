@@ -1,0 +1,355 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+  .y2k * { box-sizing: border-box; }
+  .y2k {
+    background: #000080;
+    font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+    color: #ffff00;
+    padding: 0;
+    margin: 0;
+  }
+  .y2k-marquee-bar {
+    background: #ff0000;
+    color: #ffff00;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 4px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .y2k-marquee-inner {
+    display: inline-block;
+    animation: marquee 18s linear infinite;
+  }
+  @keyframes marquee { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+  .y2k-nav {
+    background: #c0c0c0;
+    border-top: 3px solid #ffffff;
+    border-left: 3px solid #ffffff;
+    border-right: 3px solid #808080;
+    border-bottom: 3px solid #808080;
+    padding: 6px 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .y2k-nav a {
+    background: #c0c0c0;
+    color: #000080;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    padding: 3px 10px;
+  }
+  .y2k-nav a:hover { background: #000080; color: #ffffff; }
+  .y2k-hero {
+    background: #000080;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 4px dashed #ff00ff;
+  }
+  .y2k-hero h1 {
+    font-size: 28px;
+    color: #00ffff;
+    text-shadow: 3px 3px #ff0000;
+    margin-bottom: 8px;
+    animation: blink 1.2s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .y2k-hero .subtitle {
+    color: #ff00ff;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  .y2k-counter {
+    display: inline-block;
+    background: #000000;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    padding: 4px 12px;
+    border: 2px inset #008000;
+    letter-spacing: 4px;
+    margin: 8px 0;
+  }
+  .y2k-tags {
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .y2k-tag {
+    background: #ff8800;
+    color: #000000;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border: 2px outset #ffcc00;
+  }
+  .y2k-section {
+    padding: 16px 20px;
+    border-bottom: 3px dashed #ff00ff;
+  }
+  .y2k-section-title {
+    background: #ff0000;
+    color: #ffff00;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 4px 12px;
+    margin-bottom: 12px;
+    border: 3px outset #ff8888;
+    display: inline-block;
+  }
+  .y2k-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .y2k-table td {
+    border: 2px solid #00ffff;
+    padding: 8px 10px;
+    font-size: 12px;
+    vertical-align: top;
+    background: #000033;
+    color: #ffffff;
+  }
+  .y2k-table tr:hover td { background: #000066; }
+  .y2k-project-title { color: #00ff00; font-weight: bold; font-size: 13px; }
+  .y2k-project-desc { color: #cccccc; font-size: 11px; margin-top: 4px; }
+  .y2k-link {
+    color: #ffff00;
+    text-decoration: underline;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 8px;
+  }
+  .y2k-link:hover { color: #ff00ff; }
+  .y2k-pub-year { color: #ff8800; font-weight: bold; width: 50px; }
+  .y2k-pub-title { color: #00ffff; }
+  .y2k-pub-venue { color: #aaaaaa; font-size: 11px; font-style: italic; }
+  .y2k-about {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .y2k-about-text {
+    flex: 2;
+    min-width: 200px;
+    font-size: 12px;
+    color: #ccccff;
+    line-height: 1.7;
+  }
+  .y2k-about-box {
+    flex: 1;
+    min-width: 160px;
+    background: #000033;
+    border: 3px inset #0000ff;
+    padding: 10px;
+    font-size: 11px;
+  }
+  .y2k-about-box p { margin-bottom: 6px; border-bottom: 1px dotted #0055ff; padding-bottom: 6px; }
+  .y2k-about-box strong { color: #ffff00; }
+  .y2k-contact-table { width: 100%; }
+  .y2k-contact-table td {
+    padding: 8px;
+    border: 2px outset #c0c0c0;
+    background: #c0c0c0;
+    color: #000080;
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .y2k-contact-table td:hover { background: #000080; color: #ffffff; }
+  .y2k-footer {
+    background: #000000;
+    color: #008000;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    text-align: center;
+    padding: 10px;
+    border-top: 4px double #00ff00;
+  }
+  .y2k-gif-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 8px 0;
+    font-size: 20px;
+  }
+  .spin { display: inline-block; animation: spin 2s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .pulse { animation: pulse 0.8s ease-in-out infinite alternate; }
+  @keyframes pulse { from { color: #ff0000; } to { color: #ffff00; } }
+  .y2k-new {
+    background: #ff0000;
+    color: #ffff00;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 1px 5px;
+    animation: blink 0.7s step-end infinite;
+    margin-left: 6px;
+  }
+  .y2k-hit-counter-label {
+    color: #00ff00;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+  }
+</style>
+
+<div class="y2k">
+
+  <div class="y2k-marquee-bar">
+    <span class="y2k-marquee-inner">
+      &nbsp;&nbsp;&nbsp;&nbsp;&star; WELCOME TO MATTHIAS FITZKY'S HOMEPAGE &star;&nbsp;&nbsp;&nbsp;&nbsp;GEOSPATIAL DATA SCIENTIST &amp; URBAN CLIMATE RESEARCHER&nbsp;&nbsp;&nbsp;&nbsp;&star; PhD NYU TANDON 2026 &star;&nbsp;&nbsp;&nbsp;&nbsp;BEST VIEWED IN NETSCAPE NAVIGATOR 4.0 AT 800x600&nbsp;&nbsp;&nbsp;&nbsp;
+    </span>
+  </div>
+
+  <div class="y2k-nav">
+    <span style="color:#000080;font-weight:bold;font-size:13px;">NAVIGATION:</span>
+    <a href="#y2k-projects">[ PROJECTS ]</a>
+    <a href="#y2k-about">[ ABOUT ME ]</a>
+    <a href="#y2k-pubs">[ PUBLICATIONS ]</a>
+    <a href="#y2k-contact">[ CONTACT ]</a>
+    <span style="margin-left:auto;color:#000080;font-size:11px;">Last updated: 28/03/2026</span>
+  </div>
+
+  <div class="y2k-hero">
+    <div class="y2k-gif-row">
+      <span class="spin">★</span>
+      <span class="pulse">★</span>
+      <span class="spin" style="animation-direction:reverse;">★</span>
+      <span class="pulse">★</span>
+      <span class="spin">★</span>
+    </div>
+    <h1>MATTHIAS FITZKY, Ph.D.</h1>
+    <div class="subtitle">~~~ Geospatial Data Science / Urban Climate ~~~</div>
+    <div class="subtitle" style="color:#ffff00;">PhD in Urban Systems (NYU Tandon, 2026)</div>
+    <div class="y2k-tags">
+      <span class="y2k-tag">GeoAI</span>
+      <span class="y2k-tag">Deep Learning</span>
+      <span class="y2k-tag">CFD / ANSYS Fluent</span>
+      <span class="y2k-tag">Python</span>
+      <span class="y2k-tag">PyTorch</span>
+      <span class="y2k-tag">Google Earth Engine</span>
+      <span class="y2k-tag">PostGIS</span>
+      <span class="y2k-tag">Remote Sensing</span>
+      <span class="y2k-tag">3D City Models</span>
+      <span class="y2k-tag">IoT</span>
+    </div>
+    <div style="margin-top:12px;">
+      <span class="y2k-hit-counter-label">YOU ARE VISITOR NUMBER: </span>
+      <span class="y2k-counter">0069420</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#aaaaff;">
+      &lt;-- Please sign my guestbook!! --&gt;
+    </div>
+  </div>
+
+  <div class="y2k-section" id="y2k-projects">
+    <div class="y2k-section-title">** MY PROJECTS ** <span class="y2k-new">NEW!</span></div>
+    <table class="y2k-table">
+      <tr>
+        <td>
+          <div class="y2k-project-title">Reduced Order Model for Urban Microclimate — Barcelona</div>
+          <div class="y2k-project-desc">ML surrogate for CFD. ~200x speedup!! Random Forest + Gradient Boosting. ANSYS Fluent data. Predicts air temp, wind, MRT at sub-meter resolution.</div>
+          <div style="margin-top:6px;"><a class="y2k-link" href="#">[REPORT]</a><a class="y2k-link" href="https://github.com/matzefit/ROM-UPC_BCN">[GITHUB]</a></div>
+        </td>
+        <td>
+          <div class="y2k-project-title">Building Function Classification — NYC <span class="y2k-new">HOT!</span></div>
+          <div class="y2k-project-desc">U-Net semantic segmentation on NAIP aerial imagery. 12 building use types. 19k image-mask pairs. IoU = 0.71!!</div>
+          <div style="margin-top:6px;"><a class="y2k-link" href="#">[REPORT]</a><a class="y2k-link" href="https://github.com/matzefit/AIBuildingFunctionPredicition">[GITHUB]</a></div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="y2k-project-title">VisTemp — Street View to Temperature</div>
+          <div class="y2k-project-desc">CNN decodes Cityscapes street view images into air temperature. Mean IoU &gt; 0.7, RMSE 5.6°C. w/ V Rinaldi.</div>
+          <div style="margin-top:6px;"><a class="y2k-link" href="#">[REPORT]</a><a class="y2k-link" href="https://github.com/matzefit/Streetview-Image-Decoding">[GITHUB]</a></div>
+        </td>
+        <td>
+          <div class="y2k-project-title">COVID-19 &amp; Building Energy — NYC</div>
+          <div class="y2k-project-desc">ElasticNet + Dominance Analysis on NYC census tracts. Proves WFH reduces office energy!! Statistically significant p &lt; 0.001</div>
+          <div style="margin-top:6px;"><a class="y2k-link" href="#">[REPORT]</a><a class="y2k-link" href="https://github.com/matzefit/ElectricityUseCovidNYC">[GITHUB]</a></div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="y2k-project-title">ResNet CIFAR-10 Under 5M Params</div>
+          <div class="y2k-project-desc">Custom ResNet. &lt;5M parameters!! 200 epochs. Kaggle competition. Ablation studies on architecture + augmentation.</div>
+          <div style="margin-top:6px;"><a class="y2k-link" href="https://github.com/matzefit/DL_Sp24_Miniproject">[GITHUB]</a></div>
+        </td>
+        <td>
+          <div class="y2k-project-title">Mold Risk &amp; Asthma — NYC Buildings <span class="y2k-new">COOL!</span></div>
+          <div class="y2k-project-desc">Random Forest on 750,000 buildings!! Mold Risk Index. ElasticNet regression links mold to asthma ER visits. R² improves from 0.59 to 0.68!!</div>
+          <div style="margin-top:6px;"><a class="y2k-link" href="#">[REPORT]</a><a class="y2k-link" href="https://github.com/bbonczak/Predicting-mold-risk-in-the-building-stock-of-NYC">[GITHUB]</a></div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="y2k-section" id="y2k-about">
+    <div class="y2k-section-title">** ABOUT ME **</div>
+    <div class="y2k-about">
+      <div class="y2k-about-text">
+        <p>Hello and welcome to my homepage!! I am a geospatial data scientist and urban researcher with a background spanning land surveying, photogrammetry, remote sensing, and computational fluid dynamics. My PhD at NYU Tandon focused on microclimate modeling and GeoAI applications in dense urban environments!!</p>
+        <p>My work sits at the intersection of physical simulation and machine learning — using CFD to generate ground-truth thermal fields, then training spatial models to predict and generalize at city scale. I have worked across Germany, Singapore, Abu Dhabi, and New York City!!</p>
+        <p>I am looking 4 roles combining geospatial engineering, climate risk analysis, and applied AI :)</p>
+      </div>
+      <div class="y2k-about-box">
+        <p><strong>PhD:</strong> Urban Systems<br>NYU Tandon, 2026</p>
+        <p><strong>M.Sc.:</strong> Photogrammetry &amp; Geoinformatics<br>HfT Stuttgart 2019</p>
+        <p><strong>B.Eng.:</strong> Land Surveying<br>HfT Stuttgart 2018</p>
+        <p><strong>Languages:</strong><br>German (native)<br>English (fluent)<br>French (basic)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="y2k-section" id="y2k-pubs">
+    <div class="y2k-section-title">** PUBLICATIONS **</div>
+    <table class="y2k-table">
+      <tr><td class="y2k-pub-year">2026</td><td><div class="y2k-pub-title">A Computational Framework for Rapid Prediction of Human Thermal Exposure...</div><div class="y2k-pub-venue">PhD Thesis — NYU Tandon &nbsp;<a class="y2k-link" href="https://www.proquest.com/openview/218204f28a2ce67aef2d45be4dcef166/1.pdf">[PROQUEST]</a></div></td></tr>
+      <tr><td class="y2k-pub-year">2025</td><td><div class="y2k-pub-title">A Synoptic Analysis of the Effect of Radiance on Human Perceived Temperature <span class="y2k-new">NEW!</span></div><div class="y2k-pub-venue">Energy and Buildings 346, 116161 &nbsp;<a class="y2k-link" href="https://doi.org/10.1016/j.enbuild.2025.116161">[DOI]</a></div></td></tr>
+      <tr><td class="y2k-pub-year">2025</td><td><div class="y2k-pub-title">Climate Action in Islanded Jurisdictions: Puerto Rico and Hawaii RPS</div><div class="y2k-pub-venue">Energy Strategy Reviews 62, 101946 &nbsp;<a class="y2k-link" href="https://doi.org/10.1016/j.esr.2025.101946">[DOI]</a></div></td></tr>
+      <tr><td class="y2k-pub-year">2025</td><td><div class="y2k-pub-title">Modeling Human Thermal Experience in the Urban Microclimate</div><div class="y2k-pub-venue">ICUC12, Rotterdam &nbsp;<a class="y2k-link" href="https://meetingorganizer.copernicus.org/ICUC12/ICUC12-561.html">[ABSTRACT]</a></div></td></tr>
+      <tr><td class="y2k-pub-year">2024</td><td><div class="y2k-pub-title">High Performance Computing for Simulation of the Urban Microclimate</div><div class="y2k-pub-venue">104th AMS Annual Meeting &nbsp;<a class="y2k-link" href="https://ui.adsabs.harvard.edu/abs/2024AMS...10439880F/abstract">[ABSTRACT]</a></div></td></tr>
+      <tr><td class="y2k-pub-year">2020</td><td><div class="y2k-pub-title">Developing Web-Based 3D Health-Aware Routing for Pedestrians and Cyclists</div><div class="y2k-pub-venue">E3S Web of Conferences 171 &nbsp;<a class="y2k-link" href="https://doi.org/10.1051/e3sconf/202017102009">[DOI]</a></div></td></tr>
+      <tr><td class="y2k-pub-year">2018</td><td><div class="y2k-pub-title">Building Energy Consumption Modeling at Urban Scale — Europe</div><div class="y2k-pub-venue">IEEE INTELEC &nbsp;<a class="y2k-link" href="https://ieeexplore.ieee.org/abstract/document/8612382">[DOI]</a></div></td></tr>
+    </table>
+  </div>
+
+  <div class="y2k-section" id="y2k-contact">
+    <div class="y2k-section-title">** CONTACT ME!! **</div>
+    <table class="y2k-contact-table">
+      <tr>
+        <td onclick="void(0)">📧 EMAIL<br><small>matthias.fitzky@nyu.edu</small></td>
+        <td onclick="void(0)">💼 LINKEDIN<br><small>click here!!</small></td>
+        <td onclick="void(0)">🐙 GITHUB<br><small>matzefit</small></td>
+        <td onclick="void(0)">📄 CV<br><small>download!!</small></td>
+      </tr>
+    </table>
+    <div style="text-align:center;margin-top:12px;font-size:12px;color:#ff00ff;">
+      &lt;-- Please email me, I check it every day!! --&gt;
+    </div>
+  </div>
+
+  <div class="y2k-footer">
+    <div>*** Matthias Fitzky, Ph.D. — Geospatial Data Science &amp; Urban Climate ***</div>
+    <div style="margin-top:4px;">This page is © 2026 Matthias Fitzky. Do not steal my HTML!!</div>
+    <div style="margin-top:4px;">Best viewed in Netscape Navigator 4.0 | Resolution: 800x600 | Enable JavaScript</div>
+    <div style="margin-top:6px;">
+      <span style="background:#ff0000;color:#ffff00;padding:2px 6px;font-size:11px;font-weight:bold;">IE</span>
+      &nbsp;
+      <span style="background:#ff6600;color:#ffffff;padding:2px 6px;font-size:11px;font-weight:bold;">NS</span>
+      &nbsp;
+      <span style="background:#000080;color:#ffffff;padding:2px 6px;font-size:11px;font-weight:bold;">W3C</span>
+    </div>
+  </div>
+
+</div>
