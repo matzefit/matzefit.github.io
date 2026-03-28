@@ -273,43 +273,81 @@
   .cl2 { animation: drift2 22s ease-in-out infinite; }
   .cl3 { animation: drift 14s ease-in-out infinite 4s; }
   @media (max-width: 768px) {
-  nav {
-    padding: 0.75rem 1.25rem;
+    nav {
+      padding: 0.75rem 1.25rem;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .nav-logo {
+      width: 100%;
+      text-align: center;
+    }
+    .nav-links {
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    .nav-links a {
+      font-size: 10px;
+    }
+    #theme-toggle {
+      align-self: center;
+    }
+    main {
+      padding: 0 1.25rem 4rem;
+    }
+    .hero {
+      padding: 4rem 0 3rem;
+    }
+    .projects-grid {
+      grid-template-columns: 1fr;
+    }
+    .about-grid {
+      grid-template-columns: 1fr;
+    }
+    .contact-row {
+      flex-direction: column;
+    }
+    .contact-item {
+      padding: 1rem 1.25rem;
+    }
+    .pub-item {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .pub-year {
+      padding-top: 0;
+    }
   }
-  .nav-links {
-    gap: 1rem;
+  body.light {
+    --bg: #f4f2ed;
+    --bg2: #ebe8e0;
+    --bg3: #e0ddd5;
+    --text: #1a1f2e;
+    --muted: #5a6480;
+    --border: rgba(40,60,120,0.12);
   }
-  .nav-links a {
-    font-size: 10px;
+  body.light nav {
+    background: rgba(244,242,237,0.88);
   }
-  main {
-    padding: 0 1.25rem 4rem;
+  body.light .contour-bg {
+    opacity: 0.10;
   }
-  .hero {
-    padding: 4rem 0 3rem;
-  }
-  .projects-grid {
-    grid-template-columns: 1fr;
-  }
-  .about-grid {
-    grid-template-columns: 1fr;
-  }
-  .contact-row {
-    flex-direction: column;
-  }
-  .contact-item {
-    padding: 1rem 1.25rem;
-  }
-  .pub-item {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .pub-year {
-    padding-top: 0;
-  }
-}
 </style>
 </head>
+<script>
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    document.getElementById('theme-toggle').textContent = isLight ? 'Dark' : 'Light';
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  }
+  if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-toggle').textContent = 'Dark';
+  }
+</script>
 <body>
 
 <svg class="contour-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -350,6 +388,19 @@
     <li><a href="#publications">Publications</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
+  <button id="theme-toggle" onclick="toggleTheme()" style="
+    background: none;
+    border: 0.5px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  ">Light</button>
 </nav>
 
 <main>
