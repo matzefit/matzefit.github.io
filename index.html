@@ -336,7 +336,6 @@
     opacity: 0.10;
   }
 </style>
-</head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-0BE03EC8NW"></script>
 <script>
@@ -346,6 +345,7 @@
 
   gtag('config', 'G-0BE03EC8NW');
 </script>
+</head>
 
 <script>
   function toggleTheme() {
@@ -355,7 +355,9 @@
   }
   if (localStorage.getItem('theme') === 'light') {
     document.body.classList.add('light');
-    document.getElementById('theme-toggle').textContent = 'Dark';
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('theme-toggle').textContent = 'Dark';
+    });
   }
 </script>
 <body>
@@ -454,8 +456,8 @@
           <span class="project-tag">K-Means</span>
         </div>
         <div class="project-links">
-          <a href="pdfs/PIML_Project_Report-5.pdf" class="plink pdf" target="_blank">Report</a>
-          <a href="https://github.com/matzefit/ROM-UPC_BCN" class="plink repo" target="_blank">GitHub</a>
+          <a href="pdfs/PIML_Project_Report-5.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
+          <a href="https://github.com/matzefit/ROM-UPC_BCN" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       <!-- Project 2 -->
@@ -472,15 +474,15 @@
           <span class="project-tag">GDAL</span>
         </div>
         <div class="project-links">
-          <a href="pdfs/_Spring_24__Deep_Learning___Final_Project-6-4.pdf" class="plink pdf" target="_blank">Report</a>
-          <a href="https://github.com/matzefit/AIBuildingFunctionPredicition" class="plink repo" target="_blank">GitHub</a>
+          <a href="pdfs/_Spring_24__Deep_Learning___Final_Project-6-4.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
+          <a href="https://github.com/matzefit/AIBuildingFunctionPredicition" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       <!-- Project 3  -->
       <div class="project-card">
         <div class="project-heat" style="background: linear-gradient(to right, #00c8a0, #0057ff)"></div>
         <h3>VisTemp — Visual Air Temperature Prediction from Street View</h3>
-        <p class="project-desc">CNN model combining semantic segmentation and temperature regression on street view imagery. Trained on the Cityscapes dataset; achieves mean IoU above 0.7 and RMSE of 5.6°C. With <a href="https://varinaldi.notion.site/portfolio" target="_blank" style="color: var(--accent2); text-decoration: none;">V Rinaldi</a>.</p>
+        <p class="project-desc">CNN model combining semantic segmentation and temperature regression on street view imagery. Trained on the Cityscapes dataset; achieves mean IoU above 0.7 and RMSE of 5.6°C. With <a href="https://varinaldi.notion.site/portfolio" target="_blank" rel="noopener noreferrer" style="color: var(--accent2); text-decoration: none;">V Rinaldi</a>.</p>
         <div class="project-tags">
           <span class="project-tag">Python</span>
           <span class="project-tag">PyTorch</span>
@@ -488,8 +490,8 @@
           <span class="project-tag">Semantic Segmentation</span>
         </div>
         <div class="project-links">
-          <a href="pdfs/CV VisTemp-report- Rinaldi_Fitzky-3.pdf" class="plink pdf" target="_blank">Report</a>
-          <a href="https://github.com/matzefit/Streetview-Image-Decoding" class="plink repo" target="_blank">GitHub</a>
+          <a href="pdfs/CV VisTemp-report- Rinaldi_Fitzky-3.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
+          <a href="https://github.com/matzefit/Streetview-Image-Decoding" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       <!-- Project 4 -->
@@ -506,8 +508,8 @@
           <span class="project-tag">PLUTO</span>
         </div>
         <div class="project-links">
-          <a href="pdfs/ElectricityUseCovid.pdf" class="plink pdf" target="_blank">Report</a>
-          <a href="https://github.com/matzefit/ElectricityUseCovidNYC" class="plink repo" target="_blank">GitHub</a>
+          <a href="pdfs/ElectricityUseCovid.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
+          <a href="https://github.com/matzefit/ElectricityUseCovidNYC" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       <!-- Project 5 -->
@@ -523,7 +525,7 @@
           <span class="project-tag">Deep Learning</span>
         </div>
         <div class="project-links">
-          <a href="https://github.com/matzefit/DL_Sp24_Miniproject" class="plink repo" target="_blank">GitHub</a>
+          <a href="https://github.com/matzefit/DL_Sp24_Miniproject" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       <!-- Project 6 -->
@@ -541,8 +543,8 @@
           <span class="project-tag">PLUTO</span>
         </div>
         <div class="project-links">
-          <a href="pdfs/Final Report - ML For Cities-1.pdf" class="plink pdf" target="_blank">Report</a>
-          <a href="https://github.com/bbonczak/Predicting-mold-risk-in-the-building-stock-of-NYC" class="plink repo" target="_blank">GitHub</a>
+          <a href="pdfs/Final Report - ML For Cities-1.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
+          <a href="https://github.com/bbonczak/Predicting-mold-risk-in-the-building-stock-of-NYC" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       
@@ -597,7 +599,7 @@
           <p class="pub-title">On the Prediction of Failure of Power Transmission Lines in Complex Islanded Tropical Terrains</p>
           <p class="pub-authors">BVM Cruz, JP Montoya, FB Oppong, V Gade, N Vargas, M Fitzky et al.</p>
           <p class="pub-venue">106th AMS Annual Meeting</p>
-          <a href="https://ams.confex.com/ams/106ANNUAL/meetingapp.cgi/Paper/469229" class="pub-doi" target="_blank">Abstract ↗</a>
+          <a href="https://ams.confex.com/ams/106ANNUAL/meetingapp.cgi/Paper/469229" class="pub-doi" target="_blank" rel="noopener noreferrer">Abstract ↗</a>
 
         </div>
       </div>
@@ -609,7 +611,7 @@
           <p class="pub-title">A Computational Framework for Rapid Prediction of Human Thermal Exposure in Complex Built Environments</p>
           <p class="pub-authors">M Fitzky</p>
           <p class="pub-venue">New York University Tandon School of Engineering - Ph.D.</p>
-          <a href="https://www.proquest.com/openview/218204f28a2ce67aef2d45be4dcef166/1.pdf?cbl=18750&diss=y&pq-origsite=gscholar" class="pub-doi" target="_blank">ProQuest ↗</a>
+          <a href="https://www.proquest.com/openview/218204f28a2ce67aef2d45be4dcef166/1.pdf?cbl=18750&diss=y&pq-origsite=gscholar" class="pub-doi" target="_blank" rel="noopener noreferrer">ProQuest ↗</a>
         </div>
       </div>
 
@@ -620,7 +622,7 @@
           <p class="pub-title">A Synoptic Analysis of the Effect of Radiance on Human Perceived Temperature</p>
           <p class="pub-authors">M Fitzky, J Brozovsky, M Ghandehari</p>
           <p class="pub-venue">Energy and Buildings 346, 116161</p>
-          <a href="https://doi.org/10.1016/j.enbuild.2025.116161" class="pub-doi" target="_blank">DOI ↗</a>
+          <a href="https://doi.org/10.1016/j.enbuild.2025.116161" class="pub-doi" target="_blank" rel="noopener noreferrer">DOI ↗</a>
         </div>
       </div>
 
@@ -631,7 +633,7 @@
           <p class="pub-title">Climate Action in Islanded Jurisdictions: A Comparative Case Study of Renewable Portfolio Standards in Puerto Rico and Hawaii</p>
           <p class="pub-authors">R Brenner, M Fitzky, K Hertz, T Lan, V Rinaldi, A Vadali, M Ghandehari</p>
           <p class="pub-venue">Energy Strategy Reviews 62, 101946</p>
-          <a href="https://doi.org/10.1016/j.esr.2025.101946" class="pub-doi" target="_blank">DOI ↗</a>
+          <a href="https://doi.org/10.1016/j.esr.2025.101946" class="pub-doi" target="_blank" rel="noopener noreferrer">DOI ↗</a>
         </div>
       </div>
 
@@ -642,7 +644,7 @@
           <p class="pub-title">Modeling Human Thermal Experience in the Urban Microclimate</p>
           <p class="pub-authors">M Fitzky, M Ghandehari</p>
           <p class="pub-venue">12th International Conference on Urban Climate (ICUC12), Rotterdam</p>
-          <a href="https://meetingorganizer.copernicus.org/ICUC12/ICUC12-561.html" class="pub-doi" target="_blank">Abstract ↗</a>
+          <a href="https://meetingorganizer.copernicus.org/ICUC12/ICUC12-561.html" class="pub-doi" target="_blank" rel="noopener noreferrer">Abstract ↗</a>
         </div>
       </div>
 
@@ -653,7 +655,7 @@
           <p class="pub-title">Multi-Physics Analysis of Cooling Effects of Green Spaces: Case Study in Brooklyn, New York</p>
           <p class="pub-authors">S Yamada, M Ghandehari, M Fitzky</p>
           <p class="pub-venue">12th International Conference on Urban Climate (ICUC12), Rotterdam</p>
-          <a href="https://meetingorganizer.copernicus.org/ICUC12/ICUC12-545.html" class="pub-doi" target="_blank">Abstract ↗</a>
+          <a href="https://meetingorganizer.copernicus.org/ICUC12/ICUC12-545.html" class="pub-doi" target="_blank" rel="noopener noreferrer">Abstract ↗</a>
         </div>
       </div>
 
@@ -664,7 +666,7 @@
           <p class="pub-title">High Performance Computing for Simulation of the Urban Microclimate</p>
           <p class="pub-authors">M Fitzky, B Peng, V Rinaldi, M Ghandehari</p>
           <p class="pub-venue">104th Annual AMS Meeting 2024, 439880</p>
-          <a href="https://ui.adsabs.harvard.edu/abs/2024AMS...10439880F/abstract" class="pub-doi" target="_blank">Abstract ↗</a>
+          <a href="https://ui.adsabs.harvard.edu/abs/2024AMS...10439880F/abstract" class="pub-doi" target="_blank" rel="noopener noreferrer">Abstract ↗</a>
         </div>
       </div>
 
@@ -675,7 +677,7 @@
           <p class="pub-title">Comparative Analysis of Different Methodologies and Datasets for Energy Performance Labelling of Buildings</p>
           <p class="pub-authors">G Martirano, F Pignatelli, F Vinci, C Struck, V Coors, M Fitzky et al.</p>
           <p class="pub-venue">Publications Office of the European Union, Luxembourg</p>
-          <a href="https://www.researchgate.net/profile/Volker-Coors/publication/391438902_Comparative_analysis_of_different_methodologies_and_datasets_for_Energy_Performance_Labelling_of_buildings_ELISE_Energy_and_Location_Applications_Final_Report/links/6817a3abdf0e3f544f51de61/Comparative-analysis-of-different-methodologies-and-datasets-for-Energy-Performance-Labelling-of-buildings-ELISE-Energy-and-Location-Applications-Final-Report.pdf" class="pub-doi" target="_blank">PDF ↗</a>
+          <a href="https://www.researchgate.net/profile/Volker-Coors/publication/391438902_Comparative_analysis_of_different_methodologies_and_datasets_for_Energy_Performance_Labelling_of_buildings_ELISE_Energy_and_Location_Applications_Final_Report/links/6817a3abdf0e3f544f51de61/Comparative-analysis-of-different-methodologies-and-datasets-for-Energy-Performance-Labelling-of-buildings-ELISE-Energy-and-Location-Applications-Final-Report.pdf" class="pub-doi" target="_blank" rel="noopener noreferrer">PDF ↗</a>
         </div>
       </div>
 
@@ -686,7 +688,7 @@
           <p class="pub-title">Developing Web-Based 3D Health-Aware Routing for Pedestrians and Cyclists</p>
           <p class="pub-authors">R Sihombing, SK Sini, M Fitzky</p>
           <p class="pub-venue">E3S Web of Conferences 171, 02009</p>
-          <a href="https://doi.org/10.1051/e3sconf/202017102009" class="pub-doi" target="_blank">DOI ↗</a>
+          <a href="https://doi.org/10.1051/e3sconf/202017102009" class="pub-doi" target="_blank" rel="noopener noreferrer">DOI ↗</a>
         </div>
       </div>
 
@@ -707,7 +709,7 @@
           <p class="pub-title">Building Energy Consumption Modeling at Urban Scale: Three Case Studies in Europe for Residential Buildings</p>
           <p class="pub-authors">G Mutani, V Todeschi, J Kämpf, V Coors, M Fitzky</p>
           <p class="pub-venue">IEEE International Telecommunications Energy Conference (INTELEC), 1–8</p>
-          <a href="https://ieeexplore.ieee.org/abstract/document/8612382?casa_token=UL3GrHjB1HQAAAAA:sdory65BChwnx0YUBvdnL6BYuTjrHW4tPp6OLwhCmXVeSsmTn_q-C-oKR8vzCR9hdO4vlEVInpE" class="pub-doi" target="_blank">DOI ↗</a>
+          <a href="https://ieeexplore.ieee.org/abstract/document/8612382?casa_token=UL3GrHjB1HQAAAAA:sdory65BChwnx0YUBvdnL6BYuTjrHW4tPp6OLwhCmXVeSsmTn_q-C-oKR8vzCR9hdO4vlEVInpE" class="pub-doi" target="_blank" rel="noopener noreferrer">DOI ↗</a>
         </div>
       </div>
 
@@ -734,21 +736,25 @@
         <span class="contact-type">Email</span>
         <span class="contact-val">matthias.fitzky@nyu.edu</span>
       </a>
-      <a target="_blank" href="https://www.linkedin.com/in/matthias-fitzky-phd-268ab3139/" class="contact-item">
+      <a target="_blank" rel="noopener noreferrer" href="https://www.linkedin.com/in/matthias-fitzky-phd-268ab3139/" class="contact-item">
         <span class="contact-type">LinkedIn</span>
         <span class="contact-val">Profile ↗</span>
       </a>
-      <a target="_blank" href="https://www.xing.com/profile/Matthias_Fitzky/web_profiles" class="contact-item">
+      <a target="_blank" rel="noopener noreferrer" href="https://www.xing.com/profile/Matthias_Fitzky/web_profiles" class="contact-item">
         <span class="contact-type">Xing</span>
         <span class="contact-val">Profile ↗</span>
       </a>
-      <a target="_blank" href="https://github.com/matzefit" class="contact-item">
+      <a target="_blank" rel="noopener noreferrer" href="https://github.com/matzefit" class="contact-item">
         <span class="contact-type">GitHub</span>
         <span class="contact-val">matzefit ↗</span>
       </a>
-      <a target="_blank" href="CV/CV Matthias Fitzky MF_18032026_V2.pdf" class="contact-item">
+      <a target="_blank" rel="noopener noreferrer" href="CV/CV Matthias Fitzky MF_18032026_V2.pdf" class="contact-item">
         <span class="contact-type">CV</span>
         <span class="contact-val">Download PDF ↓</span>
+      </a>
+      <a target="_blank" rel="noopener noreferrer" href="https://scholar.google.com/citations?user=dTVDRx8AAAAJ&hl=en" class="contact-item">
+        <span class="contact-type">Google Scholar</span>
+        <span class="contact-val">Profile ↗</span>
       </a>
     </div>
   </section>
