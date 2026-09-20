@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urban Radiance Field &mdash; MRT viewer</title>
+<meta name="description" content="Pedestrian-height mean radiant temperature over a real urban scene, with the three-level radiation budget at every standpoint.">
+<link rel="stylesheet" href="./style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="app">
+  <div id="stage">
+    <canvas id="view"></canvas>
+
+    <div id="titlecard">
+      <h1>Urban Radiance Field</h1>
+      <p>Mean radiant temperature for a standing person at 1.5&nbsp;m, Karlsruhe,
+         <span id="when">&mdash;</span></p>
+    </div>
+
+    <div id="controls">
+      <label class="ctl">
+        <span>Surface</span>
+        <select id="field"></select>
+      </label>
+      <div id="legend">
+        <div id="legend-bar"></div>
+        <div id="legend-ticks"><span id="legend-lo"></span><span id="legend-hi"></span></div>
+      </div>
+      <label class="ctl row">
+        <span>Backdrop</span>
+        <input id="backdrop" type="range" min="0" max="100" value="100">
+      </label>
+      <label class="ctl row">
+        <span>Surface opacity</span>
+        <input id="surfop" type="range" min="20" max="100" value="100">
+      </label>
+      <button id="reset" type="button">Reset view</button>
+    </div>
+
+    <div id="hint">Click the coloured surface to read its radiation budget</div>
+    <div id="hover"></div>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <div id="loading-text">Loading&hellip;</div>
+      <div id="loading-bar"><div id="loading-fill"></div></div>
+    </div>
+  </div>
+
+  <aside id="panel" class="empty">
+    <div id="panel-empty">
+      <h2>No standpoint selected</h2>
+      <p>Drag to orbit, scroll to zoom, right-drag to pan.</p>
+      <p>Click anywhere on the MRT surface to see where that pedestrian&rsquo;s radiation
+         comes from, split three ways.</p>
+    </div>
+
+    <div id="panel-body" hidden>
+      <header id="readout">
+        <div class="mrt">
+          <span id="mrt-value">&mdash;</span><span class="unit">&deg;C</span>
+          <em>mean radiant temperature</em>
+        </div>
+        <dl id="readout-grid"></dl>
+      </header>
+
+      <nav id="bands" role="tablist">
+        <button type="button" data-band="comb" class="on" role="tab">Combined</button>
+        <button type="button" data-band="lw" role="tab">Longwave</button>
+        <button type="button" data-band="sw" role="tab">Shortwave</button>
+      </nav>
+
+      <div id="levels"></div>
+
+      <footer id="panel-foot">
+        <p id="closure"></p>
+        <p id="conditions"></p>
+      </footer>
+    </div>
+  </aside>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

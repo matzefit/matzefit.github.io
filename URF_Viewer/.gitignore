@@ -1,0 +1,55 @@
+# --- Real dataset and generated data (tens of GB -- never tracked) ---
+Flug_100/
+Flug_100.zip
+
+# --- Blender visualization project (multi-GB .blend files + rendered videos) ---
+blender_vis/
+
+# --- Presentation (binary office doc, not core to the code repo) ---
+Urban_Radiance_Field.pptx
+
+# --- DJI's proprietary Thermal SDK DLLs (redistributed binaries, not our code) ---
+dji_thermal_sdk_dlls/
+dji_thermal_sdk_v*.zip
+
+# --- Editor / tool local state ---
+.claude/settings.local.json
+.vscode/
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Local environment ---
+.env
+
+DJI_H30T_SampleData
+
+# --- White paper / write-up (drafted outside the repo; kept local) ---
+# The figures stay tracked in docs/figures/, and so does scripts/make_paper_figures.py,
+# which only renders the scene maps. Hidden here: the report itself and the graphical
+# abstract that exists only for it.
+scripts/make_graphical_abstract.py
+docs/whitepaper/
+docs/report/
+docs/*whitepaper*
+docs/*white_paper*
+docs/*report*
+
+# --- Handover bundle for a collaborator (4 GB of copied data; built on demand) ---
+handover/
+
+# --- Web viewer's generated assets (~26 MB, rebuilt in under 4 minutes) ---
+# The viewer's own source in web/ IS tracked; only the binaries the two scripts derive from
+# the flight are not, for the same reason Flug_100/ is not: they are outputs, and re-running
+# them writes new bytes every time, which would grow the history on each rebuild.
+#
+#   python scripts/precompute_attribution.py && python scripts/make_web_assets.py
+#
+# To deploy to GitHub Pages or any other static host, either build them in CI with those two
+# commands, or `git add -f web/data/` once and let them ride along -- 26 MB is well inside
+# what a repo carries comfortably, it just should not be the silent default.
+web/data/

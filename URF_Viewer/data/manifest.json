@@ -1,0 +1,274 @@
+{
+  "format": "urf-attribution/1",
+  "generated": "2026-09-20T21:03:11.562670+00:00",
+  "n_points": 107932,
+  "n_points_full": 107932,
+  "partial": false,
+  "bin": "attribution.bin",
+  "bin_bytes": 13923228,
+  "blocks": [
+    {
+      "name": "mrt_combined",
+      "dtype": "float32",
+      "offset": 0,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "degC, reported (incl. specular)"
+    },
+    {
+      "name": "mrt_longwave",
+      "dtype": "float32",
+      "offset": 431728,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "degC, longwave-only component"
+    },
+    {
+      "name": "e_lw",
+      "dtype": "float32",
+      "offset": 863456,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, body-weighted longwave irradiance"
+    },
+    {
+      "name": "e_sw_diffuse",
+      "dtype": "float32",
+      "offset": 1295184,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, diffuse + reflected shortwave"
+    },
+    {
+      "name": "e_sw_direct",
+      "dtype": "float32",
+      "offset": 1726912,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, f_p*DNI*delta_shadow on the body"
+    },
+    {
+      "name": "e_sw_specular",
+      "dtype": "float32",
+      "offset": 2158640,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, glint intercepted by the body"
+    },
+    {
+      "name": "z",
+      "dtype": "float32",
+      "offset": 2590368,
+      "length": 431728,
+      "cols": 1,
+      "scale": null,
+      "note": "m, standpoint height (ground + 1.5)"
+    },
+    {
+      "name": "sunlit",
+      "dtype": "uint8",
+      "offset": 3022096,
+      "length": 107932,
+      "cols": 1,
+      "scale": null,
+      "note": "1 where the body sees the sun"
+    },
+    {
+      "name": "l1_lw",
+      "dtype": "uint16",
+      "offset": 3130028,
+      "length": 1295184,
+      "cols": 6,
+      "scale": 0.004744629957512332,
+      "note": "W/m2 plane irradiance L_i, pre-F_i, order levels.l1.labels"
+    },
+    {
+      "name": "l1_sw",
+      "dtype": "uint16",
+      "offset": 4425212,
+      "length": 1295184,
+      "cols": 6,
+      "scale": 0.001051059335221106,
+      "note": "W/m2 plane irradiance D_i, pre-F_i, order levels.l1.labels"
+    },
+    {
+      "name": "l2_lw",
+      "dtype": "uint16",
+      "offset": 5720396,
+      "length": 1295184,
+      "cols": 6,
+      "scale": 0.004152441667142738,
+      "note": "W/m2 body-weighted contribution, order levels.l2.labels"
+    },
+    {
+      "name": "l2_sw",
+      "dtype": "uint16",
+      "offset": 7015580,
+      "length": 1295184,
+      "cols": 6,
+      "scale": 0.0009354136318469789,
+      "note": "W/m2 body-weighted contribution, order levels.l2.labels"
+    },
+    {
+      "name": "l3_lw",
+      "dtype": "uint16",
+      "offset": 8310764,
+      "length": 2806232,
+      "cols": 13,
+      "scale": 0.004152441667142738,
+      "note": "W/m2 body-weighted contribution, order levels.l3.labels"
+    },
+    {
+      "name": "l3_sw",
+      "dtype": "uint16",
+      "offset": 11116996,
+      "length": 2806232,
+      "cols": 13,
+      "scale": 0.0009354136318469789,
+      "note": "W/m2 body-weighted contribution, order levels.l3.labels"
+    }
+  ],
+  "levels": {
+    "l1": {
+      "name": "Direction",
+      "labels": [
+        "East",
+        "West",
+        "North",
+        "South",
+        "Up",
+        "Down"
+      ],
+      "colors": [
+        "#55a868",
+        "#8172b2",
+        "#4c72b0",
+        "#c44e52",
+        "#87bff0",
+        "#8c6d46"
+      ],
+      "factors": [
+        0.22,
+        0.22,
+        0.22,
+        0.22,
+        0.06,
+        0.06
+      ],
+      "note": "contribution is F_i * plane irradiance; the stored values are the plane irradiances themselves (what a six-directional sensor reads)"
+    },
+    "l2": {
+      "name": "Element",
+      "labels": [
+        "Facade",
+        "Roof",
+        "Road / ground",
+        "Vegetation",
+        "Vehicle",
+        "Sky"
+      ],
+      "colors": [
+        "#f2e4bd",
+        "#d6604d",
+        "#4a4a52",
+        "#458b4d",
+        "#d55e00",
+        "#87bff0"
+      ],
+      "note": "building split facade/roof by |n_z| < 0.5 at the hit facet"
+    },
+    "l3": {
+      "name": "Material",
+      "labels": [
+        "tile_roof",
+        "metal_roof",
+        "concrete",
+        "plaster_stucco",
+        "asphalt_road",
+        "vegetation",
+        "brick_masonry",
+        "bare_soil",
+        "glass",
+        "membrane_roof",
+        "stone_masonry",
+        "unclassified",
+        "sky"
+      ],
+      "pretty": [
+        "Clay tile roof",
+        "Metal roof",
+        "Concrete",
+        "Plaster/stucco",
+        "Asphalt",
+        "Vegetation",
+        "Brick",
+        "Bare soil",
+        "Glass",
+        "Flat roof",
+        "Stone",
+        "Unclassified",
+        "Sky"
+      ],
+      "colors": [
+        "#d6604d",
+        "#99a5b1",
+        "#bdb8ab",
+        "#f2e4bd",
+        "#4a4a52",
+        "#458b4d",
+        "#a54332",
+        "#997652",
+        "#53b4e0",
+        "#66666f",
+        "#c7c2b3",
+        "#d9d9d9",
+        "#87bff0"
+      ],
+      "note": "SAM 3 open-vocabulary material at the hit point"
+    }
+  },
+  "body": {
+    "model": "standing person: VDI 3787 six-directional F_i (0.22/0.06), f_p VDI 3789, a_k 0.70, a_l 0.97",
+    "alpha_sw": 0.7,
+    "eps_p": 0.97,
+    "lw_coeff": 1.0,
+    "sw_coeff": 0.7216494845360825,
+    "height_above_ground": 1.5,
+    "n_rays": 401
+  },
+  "conditions": {
+    "when": "2019-03-19 07:30:00+01:00",
+    "lat": 49.010541,
+    "lon": 8.406368,
+    "altitude_m": 61.5,
+    "t_atm_c": 4.375,
+    "rh_pct": 89.0,
+    "cloud_cover_tenths": 10.0,
+    "sky_downwelling_lw": 305.7738794102568,
+    "ghi": 79.725,
+    "dni": 71.8162551350832,
+    "dhi": 68.8811735337152,
+    "clearness_index": 0.3830305189051011,
+    "sun_elevation_deg": 8.68453698671767,
+    "sun_azimuth_deg": 101.02352472773578,
+    "note": "one instant: 2019-03-19 flight window, leaf-off, overcast, low sun"
+  },
+  "grid": {
+    "nx": 561,
+    "ny": 1110,
+    "spacing": 0.5,
+    "x0": -80.64878845214844,
+    "y0": -177.6109619140625
+  },
+  "closure_max_error_w_m2": 3.979039320256561e-13,
+  "cross_check_max_dmrt_c": {
+    "longwave": 0.0,
+    "combined": 5.684341886080802e-14
+  }
+}
