@@ -1,0 +1,135 @@
+{
+  "format": "urf-cloud/1",
+  "n_points": 3076676,
+  "bin": "cloud.bin",
+  "bin_bytes": 39996788,
+  "bytes_per_point": 13.0,
+  "blocks": [
+    {
+      "name": "pos",
+      "dtype": "uint16",
+      "offset": 0,
+      "length": 18460056,
+      "cols": 3,
+      "note": "quantised to bbox: xyz = bbox_lo + pos/65535 * bbox_span",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "rgb",
+      "dtype": "uint8",
+      "offset": 18460056,
+      "length": 9230028,
+      "cols": 3,
+      "note": "true colour, sRGB",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "material",
+      "dtype": "uint8",
+      "offset": 27690084,
+      "length": 3076676,
+      "cols": 1,
+      "note": "index into levels.l3.labels of manifest.json",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "element",
+      "dtype": "uint8",
+      "offset": 30766760,
+      "length": 3076676,
+      "cols": 1,
+      "note": "index into levels.l2.labels of manifest.json",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "temp",
+      "dtype": "uint8",
+      "offset": 33843436,
+      "length": 3076676,
+      "cols": 1,
+      "note": "surface temperature, degC = bias + temp*scale",
+      "scale": 0.06422812547754043,
+      "bias": -17.909765024561633
+    },
+    {
+      "name": "svf",
+      "dtype": "uint8",
+      "offset": 36920112,
+      "length": 3076676,
+      "cols": 1,
+      "note": "cosine-weighted sky view factor, 0-1 = svf/255",
+      "scale": null,
+      "bias": null
+    }
+  ],
+  "bbox_lo": [
+    -69.00844317626954,
+    -146.93525427246092,
+    -76.3824638671875
+  ],
+  "bbox_span": [
+    259.32141717529345,
+    504.4036719970708,
+    29.491335327148434
+  ],
+  "origin_enu": [
+    64.17839440372377,
+    195.2060108095042,
+    -76.19486999511719
+  ],
+  "voxel_m": 0.2884,
+  "source_points": 11861169,
+  "clip_percentile": 0.1,
+  "temperature_range_c": [
+    -17.909765024561633,
+    -1.5315930277888232
+  ],
+  "element_labels": [
+    "Facade",
+    "Roof",
+    "Road / ground",
+    "Vegetation",
+    "Vehicle"
+  ],
+  "material_labels": [
+    "tile_roof",
+    "metal_roof",
+    "concrete",
+    "plaster_stucco",
+    "asphalt_road",
+    "vegetation",
+    "brick_masonry",
+    "bare_soil",
+    "glass",
+    "membrane_roof",
+    "stone_masonry",
+    "unclassified"
+  ],
+  "counts": {
+    "element": {
+      "Facade": 1311183,
+      "Roof": 1031522,
+      "Road / ground": 598904,
+      "Vegetation": 123971,
+      "Vehicle": 11096
+    },
+    "material": {
+      "tile_roof": 243106,
+      "metal_roof": 317758,
+      "concrete": 298908,
+      "plaster_stucco": 786195,
+      "asphalt_road": 218451,
+      "vegetation": 700353,
+      "brick_masonry": 1167,
+      "bare_soil": 109799,
+      "glass": 38463,
+      "membrane_roof": 203265,
+      "stone_masonry": 5504,
+      "unclassified": 153707
+    }
+  }
+}
