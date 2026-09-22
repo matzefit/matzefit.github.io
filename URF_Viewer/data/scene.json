@@ -1,21 +1,21 @@
 {
   "origin_enu": [
-    64.17839440372377,
-    195.2060108095042,
-    -76.19486999511719
+    56.4059208079931,
+    194.03911118687498,
+    -76.13350677490234
   ],
   "axes": "glTF Y-up: (x,y,z) = (east, up, -north) about origin_enu",
   "mrt_surface": {
     "file": "mrt_surface.glb",
-    "vertices": 107932,
-    "triangles": 186860,
-    "mrt_min": -11.797724723815918,
-    "mrt_max": 9.913878440856934
+    "vertices": 116885,
+    "triangles": 205218,
+    "mrt_min": -11.087873458862305,
+    "mrt_max": 6.955438613891602
   },
   "scene": {
     "file": "scene.glb",
-    "vertices": 195610,
-    "triangles": 417545,
+    "vertices": 253768,
+    "triangles": 554690,
     "voxel_m": 1.25,
     "chroma": 0.22,
     "grey_range": [

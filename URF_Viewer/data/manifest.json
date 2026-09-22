@@ -1,17 +1,17 @@
 {
   "format": "urf-attribution/1",
-  "generated": "2026-09-20T21:03:11.562670+00:00",
-  "n_points": 107932,
-  "n_points_full": 107932,
+  "generated": "2026-09-22T10:51:35.396482+00:00",
+  "n_points": 116885,
+  "n_points_full": 116885,
   "partial": false,
   "bin": "attribution.bin",
-  "bin_bytes": 13923228,
+  "bin_bytes": 15078165,
   "blocks": [
     {
       "name": "mrt_combined",
       "dtype": "float32",
       "offset": 0,
-      "length": 431728,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "degC, reported (incl. specular)"
@@ -19,8 +19,8 @@
     {
       "name": "mrt_longwave",
       "dtype": "float32",
-      "offset": 431728,
-      "length": 431728,
+      "offset": 467540,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "degC, longwave-only component"
@@ -28,8 +28,8 @@
     {
       "name": "e_lw",
       "dtype": "float32",
-      "offset": 863456,
-      "length": 431728,
+      "offset": 935080,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "W/m2, body-weighted longwave irradiance"
@@ -37,8 +37,8 @@
     {
       "name": "e_sw_diffuse",
       "dtype": "float32",
-      "offset": 1295184,
-      "length": 431728,
+      "offset": 1402620,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "W/m2, diffuse + reflected shortwave"
@@ -46,8 +46,8 @@
     {
       "name": "e_sw_direct",
       "dtype": "float32",
-      "offset": 1726912,
-      "length": 431728,
+      "offset": 1870160,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "W/m2, f_p*DNI*delta_shadow on the body"
@@ -55,8 +55,8 @@
     {
       "name": "e_sw_specular",
       "dtype": "float32",
-      "offset": 2158640,
-      "length": 431728,
+      "offset": 2337700,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "W/m2, glint intercepted by the body"
@@ -64,8 +64,8 @@
     {
       "name": "z",
       "dtype": "float32",
-      "offset": 2590368,
-      "length": 431728,
+      "offset": 2805240,
+      "length": 467540,
       "cols": 1,
       "scale": null,
       "note": "m, standpoint height (ground + 1.5)"
@@ -73,8 +73,8 @@
     {
       "name": "sunlit",
       "dtype": "uint8",
-      "offset": 3022096,
-      "length": 107932,
+      "offset": 3272780,
+      "length": 116885,
       "cols": 1,
       "scale": null,
       "note": "1 where the body sees the sun"
@@ -82,55 +82,55 @@
     {
       "name": "l1_lw",
       "dtype": "uint16",
-      "offset": 3130028,
-      "length": 1295184,
+      "offset": 3389665,
+      "length": 1402620,
       "cols": 6,
-      "scale": 0.004744629957512332,
+      "scale": 0.00471782440778258,
       "note": "W/m2 plane irradiance L_i, pre-F_i, order levels.l1.labels"
     },
     {
       "name": "l1_sw",
       "dtype": "uint16",
-      "offset": 4425212,
-      "length": 1295184,
+      "offset": 4792285,
+      "length": 1402620,
       "cols": 6,
-      "scale": 0.001051059335221106,
+      "scale": 0.0010504752505029553,
       "note": "W/m2 plane irradiance D_i, pre-F_i, order levels.l1.labels"
     },
     {
       "name": "l2_lw",
       "dtype": "uint16",
-      "offset": 5720396,
-      "length": 1295184,
+      "offset": 6194905,
+      "length": 1402620,
       "cols": 6,
-      "scale": 0.004152441667142738,
+      "scale": 0.0036639817551434744,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l2_sw",
       "dtype": "uint16",
-      "offset": 7015580,
-      "length": 1295184,
+      "offset": 7597525,
+      "length": 1402620,
       "cols": 6,
-      "scale": 0.0009354136318469789,
+      "scale": 0.0008188941279222574,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l3_lw",
       "dtype": "uint16",
-      "offset": 8310764,
-      "length": 2806232,
+      "offset": 9000145,
+      "length": 3039010,
       "cols": 13,
-      "scale": 0.004152441667142738,
+      "scale": 0.004079651879877023,
       "note": "W/m2 body-weighted contribution, order levels.l3.labels"
     },
     {
       "name": "l3_sw",
       "dtype": "uint16",
-      "offset": 11116996,
-      "length": 2806232,
+      "offset": 12039155,
+      "length": 3039010,
       "cols": 13,
-      "scale": 0.0009354136318469789,
+      "scale": 0.0008188941279222574,
       "note": "W/m2 body-weighted contribution, order levels.l3.labels"
     }
   ],
@@ -260,11 +260,11 @@
     "note": "one instant: 2019-03-19 flight window, leaf-off, overcast, low sun"
   },
   "grid": {
-    "nx": 561,
-    "ny": 1110,
+    "nx": 601,
+    "ny": 1141,
     "spacing": 0.5,
-    "x0": -80.64878845214844,
-    "y0": -177.6109619140625
+    "x0": -88.56928253173828,
+    "y0": -183.23440551757812
   },
   "closure_max_error_w_m2": 3.979039320256561e-13,
   "cross_check_max_dmrt_c": {
