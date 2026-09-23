@@ -1,11 +1,11 @@
 {
   "format": "urf-attribution/1",
-  "generated": "2026-09-22T19:34:37.189598+00:00",
+  "generated": "2026-09-23T04:53:31.522323+00:00",
   "n_points": 116885,
   "n_points_full": 116885,
   "partial": false,
   "bin": "attribution.bin",
-  "bin_bytes": 16013245,
+  "bin_bytes": 15078165,
   "blocks": [
     {
       "name": "mrt_combined",
@@ -101,24 +101,24 @@
       "name": "l2_lw",
       "dtype": "uint16",
       "offset": 6194905,
-      "length": 1870160,
-      "cols": 8,
-      "scale": 0.004067637606582988,
+      "length": 1402620,
+      "cols": 6,
+      "scale": 0.004076005465689873,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l2_sw",
       "dtype": "uint16",
-      "offset": 8065065,
-      "length": 1870160,
-      "cols": 8,
+      "offset": 7597525,
+      "length": 1402620,
+      "cols": 6,
       "scale": 0.0008188941279222574,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l3_lw",
       "dtype": "uint16",
-      "offset": 9935225,
+      "offset": 9000145,
       "length": 3039010,
       "cols": 13,
       "scale": 0.004067637606582988,
@@ -127,7 +127,7 @@
     {
       "name": "l3_sw",
       "dtype": "uint16",
-      "offset": 12974235,
+      "offset": 12039155,
       "length": 3039010,
       "cols": 13,
       "scale": 0.0008188941279222574,
@@ -168,47 +168,20 @@
       "labels": [
         "Roof",
         "Facade",
-        "Window",
         "Ground",
         "Vegetation",
         "Vehicle",
-        "Unclassified",
         "Sky"
       ],
       "colors": [
         "#d6604d",
         "#f2e4bd",
-        "#53b4e0",
         "#4a4a52",
         "#458b4d",
         "#d55e00",
-        "#d9d9d9",
         "#87bff0"
       ],
-      "groups": {
-        "Roof": [
-          "tile_roof",
-          "metal_roof",
-          "membrane_roof"
-        ],
-        "Facade": [
-          "plaster_stucco",
-          "concrete",
-          "brick_masonry",
-          "stone_masonry"
-        ],
-        "Window": [
-          "glass"
-        ],
-        "Ground": [
-          "asphalt_road",
-          "bare_soil"
-        ],
-        "Vegetation": [
-          "vegetation"
-        ]
-      },
-      "note": "grouped from the SAM 3 material at the hit point, not from the geometric classifier; glass is its own element because it is the surface the specular pathway acts on. No vehicle category: SAM 3 has no vehicle material."
+      "note": "geometric classification (Stage 5) with the point's own normal splitting building into roof (|n_z| >= 0.5) and facade; vegetation from SAM 3, which finds 2.09M points where greenness finds 0.36M on this leaf-off flight; vehicle only where the blob detector and the material agree."
     },
     "l3": {
       "name": "Material",

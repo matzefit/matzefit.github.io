@@ -89,9 +89,9 @@
     -1.526977571900303
   ],
   "element_labels": [
-    "Facade",
     "Roof",
-    "Road / ground",
+    "Facade",
+    "Ground",
     "Vegetation",
     "Vehicle"
   ],
@@ -111,25 +111,25 @@
   ],
   "counts": {
     "element": {
-      "Facade": 1298455,
-      "Roof": 1021652,
-      "Road / ground": 598903,
-      "Vegetation": 121237,
-      "Vehicle": 11632
+      "Roof": 803446,
+      "Facade": 1011781,
+      "Ground": 467994,
+      "Vegetation": 767059,
+      "Vehicle": 1599
     },
     "material": {
-      "tile_roof": 242801,
-      "metal_roof": 317614,
-      "concrete": 298097,
-      "plaster_stucco": 785035,
-      "asphalt_road": 216860,
-      "vegetation": 699907,
-      "brick_masonry": 1168,
-      "bare_soil": 109328,
-      "glass": 38503,
-      "membrane_roof": 202495,
-      "stone_masonry": 5501,
-      "unclassified": 134570
+      "tile_roof": 244977,
+      "metal_roof": 319428,
+      "concrete": 303253,
+      "plaster_stucco": 804447,
+      "asphalt_road": 220490,
+      "vegetation": 739620,
+      "brick_masonry": 1191,
+      "bare_soil": 115810,
+      "glass": 38731,
+      "membrane_roof": 204943,
+      "stone_masonry": 5553,
+      "unclassified": 53436
     }
   }
 }
