@@ -577,15 +577,23 @@ function levelRows(i, band) {
   const dirOrder = ['North', 'East', 'South', 'West', 'Up', 'Down']
     .map((n) => L1.labels.indexOf(n)).filter((k) => k >= 0);
 
+  // Direction bars show the irradiance ARRIVING on each plane, not F_i times it. The
+  // angular factors are near-constant -- 0.22 on each horizontal plane, 0.06 up and down --
+  // so the weighted contribution reads as four bars at ~22% and two at ~6% at every
+  // standpoint in the scene, which is a picture of F_i rather than of the place. The
+  // shortwave planes routinely span more than a factor of ten and all of that is erased.
+  // F_i stays in MRT and is still shown on each row; it is only out of the bar length.
+  const planeOf = (k) => {
+    const lw = B.l1_lw.at(i, k), sw = B.l1_sw.at(i, k);
+    return band === 'lw' ? lw : band === 'sw' ? sw : lwc * lw + swc * sw;
+  };
   const l1 = dirOrder.map((k) => {
     const fi = L1.factors[k];
-    const planeLw = B.l1_lw.at(i, k), planeSw = B.l1_sw.at(i, k);
+    const plane = planeOf(k);
     return {
       name: L1.labels[k], color: L1.colors[k],
-      value: mix(fi * planeLw, fi * planeSw),
-      sub: band === 'lw' ? `F ${fi.toFixed(2)} · plane ${f1(planeLw)} W/m²`
-        : band === 'sw' ? `F ${fi.toFixed(2)} · plane ${f1(planeSw)} W/m²`
-        : `F ${fi.toFixed(2)} · L ${f1(planeLw)} · D ${f1(planeSw)} W/m²`,
+      value: plane,
+      sub: `F ${fi.toFixed(2)} · contributes ${f1(fi * plane)} W/m²`,
     };
   });
 
@@ -613,8 +621,12 @@ function levelRows(i, band) {
     if (spec > 0) extras.push({ name: 'Specular glint', value: mix(0, spec), extra: true });
   }
 
+  // Direction carries no extras: the direct beam and the glint are contributions to the
+  // body, and this row is now plane irradiance, so listing them together would add two
+  // different quantities. They are still shown on Element and Material, which are
+  // partitions of the budget and do sum to its total.
   return [
-    { title: L1.name, rows: l1, extras },
+    { title: L1.name, rows: l1, extras: [], irradiance: true },
     { title: L2.name, rows: l2.filter((r) => r.value > 0.005), extras },
     { title: L3.name, rows: l3, extras },
   ];
@@ -657,30 +669,36 @@ function renderPanel() {
   const unit = 'W/m²';
   const bandName = { comb: 'Combined', lw: 'Longwave', sw: 'Shortwave' }[band];
 
-  $('levels').innerHTML = levelRows(i, band).map(({ title, rows, extras }) => {
+  $('levels').innerHTML = levelRows(i, band).map(({ title, rows, extras, irradiance }) => {
     const all = rows.concat(extras);
     const max = Math.max(...all.map((r) => r.value), 1e-9);
     const bars = all.map((r) => `
-      <div class="bar-row${r.extra ? ' extra' : ''}${r.value / total < 0.005 ? ' muted' : ''}">
+      <div class="bar-row${r.extra ? ' extra' : ''}${!irradiance && r.value / total < 0.005 ? ' muted' : ''}">
         <span class="swatch"${r.color ? ` style="background:${r.color}"` : ''}></span>
         <div class="body">
           <div class="top">
             <span class="name">${r.name}</span>
-            <span class="num"><b>${f1(r.value)}</b> ${unit} · ${pct(r.value / total * 100)}</span>
+            <span class="num"><b>${f1(r.value)}</b> ${unit}${
+              irradiance ? '' : ` · ${pct(r.value / total * 100)}`}</span>
           </div>
           <div class="track"><div class="fill" style="width:${(r.value / max * 100).toFixed(1)}%;background:${r.color ?? 'var(--warn)'}"></div></div>
           ${r.sub ? `<div class="sub">${r.sub}</div>` : ''}
         </div>
       </div>`).join('');
+    const caption = irradiance
+      ? `Received by each body face · what a sensor facing that way reads`
+      : `${bandName} total ${f1(total)} ${unit} · shares of that total`;
     return `<section class="level"><h3>${title}</h3>
-      <p class="total">${bandName} total ${f1(total)} ${unit} · shares of that total</p>
+      <p class="total">${caption}</p>
       ${bars}</section>`;
   }).join('');
 
   $('closure').textContent =
-    `Each level is an exact split of the same budget: every set of bars sums back to the ` +
-    `${bandName.toLowerCase()} total above. Values are transported quantised to ` +
-    `~0.005 W/m², so shares may round by a tenth.`;
+    `Element and Material are exact splits of the same budget: each sums back to the ` +
+    `${bandName.toLowerCase()} total above. Direction shows what arrives on each plane ` +
+    `instead, because the angular factors are near-constant and weighting by them makes ` +
+    `every standpoint look alike; F_i is on each row and is still inside MRT. Values are ` +
+    `transported quantised to ~0.005 W/m², so shares may round by a tenth.`;
 }
 
 /* --------------------------------------------------------------- chrome */

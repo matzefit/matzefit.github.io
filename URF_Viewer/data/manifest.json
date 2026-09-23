@@ -1,11 +1,11 @@
 {
   "format": "urf-attribution/1",
-  "generated": "2026-09-22T10:51:35.396482+00:00",
+  "generated": "2026-09-22T19:34:37.189598+00:00",
   "n_points": 116885,
   "n_points_full": 116885,
   "partial": false,
   "bin": "attribution.bin",
-  "bin_bytes": 15078165,
+  "bin_bytes": 16013245,
   "blocks": [
     {
       "name": "mrt_combined",
@@ -94,40 +94,40 @@
       "offset": 4792285,
       "length": 1402620,
       "cols": 6,
-      "scale": 0.0010504752505029553,
+      "scale": 0.001050579833556918,
       "note": "W/m2 plane irradiance D_i, pre-F_i, order levels.l1.labels"
     },
     {
       "name": "l2_lw",
       "dtype": "uint16",
       "offset": 6194905,
-      "length": 1402620,
-      "cols": 6,
-      "scale": 0.0036639817551434744,
+      "length": 1870160,
+      "cols": 8,
+      "scale": 0.004067637606582988,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l2_sw",
       "dtype": "uint16",
-      "offset": 7597525,
-      "length": 1402620,
-      "cols": 6,
+      "offset": 8065065,
+      "length": 1870160,
+      "cols": 8,
       "scale": 0.0008188941279222574,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l3_lw",
       "dtype": "uint16",
-      "offset": 9000145,
+      "offset": 9935225,
       "length": 3039010,
       "cols": 13,
-      "scale": 0.004079651879877023,
+      "scale": 0.004067637606582988,
       "note": "W/m2 body-weighted contribution, order levels.l3.labels"
     },
     {
       "name": "l3_sw",
       "dtype": "uint16",
-      "offset": 12039155,
+      "offset": 12974235,
       "length": 3039010,
       "cols": 13,
       "scale": 0.0008188941279222574,
@@ -166,22 +166,49 @@
     "l2": {
       "name": "Element",
       "labels": [
-        "Facade",
         "Roof",
-        "Road / ground",
+        "Facade",
+        "Window",
+        "Ground",
         "Vegetation",
         "Vehicle",
+        "Unclassified",
         "Sky"
       ],
       "colors": [
-        "#f2e4bd",
         "#d6604d",
+        "#f2e4bd",
+        "#53b4e0",
         "#4a4a52",
         "#458b4d",
         "#d55e00",
+        "#d9d9d9",
         "#87bff0"
       ],
-      "note": "building split facade/roof by |n_z| < 0.5 at the hit facet"
+      "groups": {
+        "Roof": [
+          "tile_roof",
+          "metal_roof",
+          "membrane_roof"
+        ],
+        "Facade": [
+          "plaster_stucco",
+          "concrete",
+          "brick_masonry",
+          "stone_masonry"
+        ],
+        "Window": [
+          "glass"
+        ],
+        "Ground": [
+          "asphalt_road",
+          "bare_soil"
+        ],
+        "Vegetation": [
+          "vegetation"
+        ]
+      },
+      "note": "grouped from the SAM 3 material at the hit point, not from the geometric classifier; glass is its own element because it is the surface the specular pathway acts on. No vehicle category: SAM 3 has no vehicle material."
     },
     "l3": {
       "name": "Material",
@@ -266,7 +293,7 @@
     "x0": -88.56928253173828,
     "y0": -183.23440551757812
   },
-  "closure_max_error_w_m2": 3.979039320256561e-13,
+  "closure_max_error_w_m2": 4.547473508864641e-13,
   "cross_check_max_dmrt_c": {
     "longwave": 0.0,
     "combined": 5.684341886080802e-14
