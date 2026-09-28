@@ -2,8 +2,8 @@
   "format": "urf-cloud/1",
   "n_points": 3538624,
   "bin": "cloud.bin",
-  "bin_bytes": 46002112,
-  "bytes_per_point": 13.0,
+  "bin_bytes": 49540736,
+  "bytes_per_point": 14.0,
   "blocks": [
     {
       "name": "pos",
@@ -64,6 +64,16 @@
       "note": "cosine-weighted sky view factor, 0-1 = svf/255",
       "scale": null,
       "bias": null
+    },
+    {
+      "name": "sw",
+      "dtype": "uint8",
+      "offset": 46002112,
+      "length": 3538624,
+      "cols": 1,
+      "note": "reflected shortwave, W/m2 = sw * scale",
+      "scale": 1.8499820359173935,
+      "bias": 0.0
     }
   ],
   "bbox_lo": [
@@ -89,6 +99,10 @@
     64.23300851003444
   ],
   "temperature_label": "Brightness temperature (\u03b5 = 1)",
+  "sw_range_w_m2": [
+    0.0,
+    471.74541915893536
+  ],
   "element_labels": [
     "Roof",
     "Facade",

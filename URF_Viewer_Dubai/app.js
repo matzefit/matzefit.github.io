@@ -1,4 +1,4 @@
-/* Urban Radiance Field -- MRT viewer.
+/* Urban Radiation Field -- MRT viewer.
  *
  * Static assets, no backend:
  *   cloud.bin        the dense reconstruction, 1 row per point: position, RGB, material,
@@ -149,6 +149,9 @@ function siteTime(iso) {
 /* ------------------------------------------------------------------ main */
 
 const RAMP_STOPS = 16;
+const SIGMA = 5.670374419e-8;
+const M_SWC = () => state.M.body.sw_coeff;       // a_k / eps_p, the shortwave weight in the MRT flux
+const NONE_RGB = [92, 99, 110];                   // a log field's "none" (value 0): neutral grey
 
 const state = {
   M: null, B: null, N: 0, C: null, CB: null,
@@ -251,8 +254,22 @@ function buildFields() {
       values: derive((i) => B.e_sw_diffuse.at(i) + B.e_sw_direct.at(i) + B.e_sw_specular.at(i)) },
     { id: 'sunlit', label: 'Direct sun on the body', unit: '', cmap: 'YlOrRd',
       values: derive((i) => B.sunlit.at(i)), exact: true, discrete: true },
+    // Specular glints. The stored MRT includes them, so what a glint adds is the MRT minus the MRT
+    // of the same flux without the intercepted glint: T = (S/sigma)^(1/4), S = sigma T^4 - k e_spec
+    // with k = a_k / eps_p (view_factors.equivalent_temperature). Most standpoints get none and the
+    // rest span three decades, so both layers are log-scaled and "none" is drawn grey.
+    { id: 'glint_mrt', label: 'MRT added by glints', unit: 'K', cmap: 'YlOrRd', log: [0.01, 10],
+      none: 'grey: no glint reaches this standpoint', digits: 2,
+      values: derive((i) => {
+        const e = B.e_sw_specular.at(i);
+        if (!(e > 0)) return 0;
+        const t = B.mrt_combined.at(i) + 273.15;
+        return t - Math.pow(t ** 4 - (M_SWC() * e) / SIGMA, 0.25);
+      }) },
+    { id: 'glint_body', label: 'Glint on the body', unit: 'W/m²', cmap: 'YlOrRd', log: [0.1, 100],
+      none: 'grey: no glint reaches this standpoint', digits: 1, values: B.e_sw_specular.data },
   ];
-  for (const f of state.fields) f.range = rangeOf(f.values, f.exact);
+  for (const f of state.fields) f.range = f.log ?? rangeOf(f.values, f.exact);
   state.field = state.fields[0];
 
   // The project's vertical datum is the COLMAP georegistration's, so raw z is a large
@@ -286,6 +303,7 @@ attribute float aMat;
 attribute float aElem;
 attribute float aTemp;
 attribute float aSvf;
+attribute float aSw;
 
 uniform vec3 uBoxLo, uBoxSpan, uOrigin;
 uniform float uSize, uMode, uDpr;
@@ -323,7 +341,8 @@ void main() {
   else if (uMode < 1.5) vColor = uMatColor[mi];
   else if (uMode < 2.5) vColor = uElemColor[ei];
   else if (uMode < 3.5) vColor = ramp(aTemp);
-  else                  vColor = ramp(aSvf);
+  else if (uMode < 4.5) vColor = ramp(aSvf);
+  else                  vColor = ramp(aSw);
 
   vec3 enu = uBoxLo + position * uBoxSpan;
   vec3 p = vec3(enu.x - uOrigin.x, enu.z - uOrigin.z, -(enu.y - uOrigin.y));
@@ -359,6 +378,8 @@ function buildCloud(meta, blocks) {
   g.setAttribute('aElem', attr(blocks.element.data, 1, false));
   g.setAttribute('aTemp', attr(blocks.temp.data, 1, true));
   g.setAttribute('aSvf', attr(blocks.svf.data, 1, true));
+  // reflected shortwave per point; a cloud built before it existed gets zeros (the menu hides it)
+  g.setAttribute('aSw', attr(blocks.sw ? blocks.sw.data : new Uint8Array(n), 1, true));
 
   // The shader expands positions, so three.js cannot derive bounds from the attribute --
   // without this the cloud is frustum-culled at the wrong moments and blinks out.
@@ -518,10 +539,14 @@ function applyField(field) {
   state.field = field;
   const [lo, hi] = field.range;
   const inv = hi > lo ? 1 / (hi - lo) : 0;
+  // log fields: t = log(v/lo) / log(hi/lo), clamped; v = 0 is "none", drawn grey
+  const llo = field.log ? Math.log10(lo) : 0, lspan = field.log ? Math.log10(hi) - llo : 1;
   const attr = V.mrtMesh.geometry.attributes.color;
   const col = attr.array;
   for (let i = 0; i < state.N; i++) {
-    const [r, g, b] = sampleCmap(field.cmap, (field.values[i] - lo) * inv);
+    const v = field.values[i];
+    const [r, g, b] = field.log && !(v > 0) ? NONE_RGB
+      : sampleCmap(field.cmap, field.log ? (Math.log10(Math.max(v, lo)) - llo) / lspan : (v - lo) * inv);
     col[i * 3] = srgbToLinear(r / 255) * 255;
     col[i * 3 + 1] = srgbToLinear(g / 255) * 255;
     col[i * 3 + 2] = srgbToLinear(b / 255) * 255;
@@ -529,9 +554,11 @@ function applyField(field) {
   attr.needsUpdate = true;
 
   $('legend-bar').style.background = cmapCss(field.cmap);
-  const d = field.unit === '°C' || field.unit === 'K' ? 1 : 0;
+  const d = field.log ? (lo < 1 ? String(lo).split('.')[1]?.length ?? 0 : 0)
+    : field.unit === '°C' || field.unit === 'K' ? 1 : 0;
   $('legend-lo').textContent = field.discrete ? 'no' : `${lo.toFixed(d)} ${field.unit}`.trim();
-  $('legend-hi').textContent = field.discrete ? 'yes' : `${hi.toFixed(d)} ${field.unit}`.trim();
+  $('legend-hi').textContent = field.discrete ? 'yes' : `${field.log ? '≥ ' : ''}${hi.toFixed(field.log ? 0 : d)} ${field.unit}`.trim();
+  $('legend-note').textContent = field.log ? `log scale · ${field.none}` : '';
 }
 
 /* -------------------------------------------------------------- picking */
@@ -578,7 +605,8 @@ function bindPointer(canvas) {
       const v = f.values[i];
       el.innerHTML = f.discrete
         ? `<i>${f.label}</i> <b>${v ? 'yes' : 'no'}</b>`
-        : `<i>${f.label}</i> <b>${v.toFixed(f.unit === 'W/m²' ? 0 : 2)}</b> ${f.unit}`;
+        : f.log && !(v > 0) ? `<i>${f.label}</i> <b>none</b>`
+        : `<i>${f.label}</i> <b>${v.toFixed(f.digits ?? (f.unit === 'W/m²' ? 0 : 2))}</b> ${f.unit}`;
       const r = canvas.getBoundingClientRect();
       el.style.left = `${e.clientX - r.left}px`;
       el.style.top = `${e.clientY - r.top}px`;
@@ -805,7 +833,9 @@ function buildChrome() {
   }
 
   // Cloud colour mode, and the ramp/legend that goes with the continuous ones.
-  const RAMPS = { 3: ['inferno', 'temperature_range_c', '°C'], 4: ['viridis', null, ''] };
+  const RAMPS = { 3: ['inferno', 'temperature_range_c', '°C'], 4: ['viridis', null, ''],
+                  5: ['YlOrRd', 'sw_range_w_m2', 'W/m²'] };
+  if (!C.sw_range_w_m2) $('cloudmode').querySelector('option[value="5"]')?.remove();
   $('cloudmode').addEventListener('change', (e) => {
     const m = +e.target.value;
     state.cloudMode = m;
@@ -873,6 +903,12 @@ function buildChrome() {
 
   const c = M.conditions;
   $('when').textContent = siteTime(c.when);
+  const sky = c.cloud_cover_tenths === 0 ? 'clear sky' : `cloud ${c.cloud_cover_tenths}/10`;
+  $('conds').innerHTML =
+    `Air ${c.t_atm_c.toFixed(1)} °C · RH ${f0(c.rh_pct)} % · ${sky}<br>` +
+    `Sun ${f1(c.sun_elevation_deg)}° high, azimuth ${f0(c.sun_azimuth_deg)}°<br>` +
+    `Global ${f0(c.ghi)} W/m² (direct ${f0(c.dni)}, diffuse ${f0(c.dhi)})`;
+  $('conds-src').textContent = c.air_source ? `Weather: ${c.air_source}` : '';
   $('conditions').textContent =
     `One instant: ${c.note}. Sun ${c.sun_elevation_deg.toFixed(1)}° above the horizon, ` +
     `DNI ${f0(c.dni)} / DHI ${f0(c.dhi)} W/m², sky downwelling longwave ` +

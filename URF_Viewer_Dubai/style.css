@@ -1,4 +1,4 @@
-/* Urban Radiance Field MRT viewer.
+/* Urban Radiation Field MRT viewer.
    Dark chrome around a dark 3D stage: the point cloud and the inferno MRT surface both read
    best against it, and it keeps the UI from competing with the data. Three columns --
    scene controls left, stage centre, the selected standpoint's budget right. */
@@ -48,6 +48,8 @@ html, body {
 
 #titlecard h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
 #titlecard p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+#titlecard #conds { margin-top: 6px; line-height: 1.45; color: var(--text); font-variant-numeric: tabular-nums; }
+#titlecard #conds-src { font-size: 10.5px; color: var(--faint); }
 
 .grp { display: flex; flex-direction: column; gap: 7px; }
 .grp > h2 {
@@ -113,6 +115,8 @@ input[type=range]::-moz-range-thumb {
   display: flex; justify-content: space-between;
   font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 3px;
 }
+#legend-note { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
+#legend-note:empty { display: none; }
 
 /* ---------- stage overlays ---------- */
 

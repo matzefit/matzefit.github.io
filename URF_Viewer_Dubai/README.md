@@ -15,7 +15,7 @@ web/
     mrt_surface.glb.gz   the pedestrian-height surface (vertex i = row i of attribution.bin)
     scene.json           shared origin of all layers
     cloud.json           layout of cloud.bin
-    cloud.bin.gz         the semantic point cloud
+    cloud.bin.gz         the semantic point cloud (RGB, material, element, temperature, SVF, shortwave)
     scene.glb.gz         grey backdrop mesh; fetched only when "Solid mesh" is switched on
 ```
 
@@ -46,6 +46,11 @@ Sizes are set in `site.toml` `[web]`:
 - `point_cloud_points`: the cloud's size.
 - `scene_voxel_m`: the backdrop mesh's size.
 - `place`: the title.
+
+The conditions under the title come from the block's `block.toml` `[atmosphere]`, including its
+`source` line: air temperature and humidity, the sky, the sun, and global, direct and diffuse
+radiation. When the Kestrel data replaces the NCM stand-in, update that section and rerun the
+pipeline from the thermal fusion. Changing only the text needs just `precompute_attribution.py`.
 
 `precompute_attribution.py` and `make_web_assets.py` must use the same stride. Both read it
 from `site.toml`, and `make_web_assets.py` checks that the vertex and row counts match.
@@ -116,15 +121,15 @@ Dubai, 13:00 slot, built 2026-09-27:
 |---|---|---|
 | attribution.bin.gz | 23.4 MB (34.4 raw) | first |
 | mrt_surface.glb.gz | 3.4 MB (8.4 raw) | first |
-| cloud.bin.gz | 35.8 MB (46.0 raw) | streamed after the page opens |
+| cloud.bin.gz | 38.4 MB (49.5 raw) | streamed after the page opens |
 | scene.glb.gz | 18.7 MB (27.4 raw) | only when "Solid mesh" is switched on |
 | *.json | < 10 kB each | first |
 
-Total 81 MB. Measured in headless Edge, 40 ms latency:
+Total 84 MB. Measured in headless Edge, 40 ms latency:
 
 | connection | page usable | point cloud in |
 |---|---|---|
-| 30 Mbit/s | 12.9 s | 36.7 s |
-| local, unthrottled | 2.1 s | 15.6 s |
+| 30 Mbit/s | 12.8 s | 35.1 s |
+| local, unthrottled | 2.1 s | 15.5 s |
 
 Opening the solid mesh adds 18.7 MB.
