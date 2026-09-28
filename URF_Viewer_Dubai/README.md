@@ -17,6 +17,8 @@ web/
     cloud.json           layout of cloud.bin
     cloud.bin.gz         the semantic point cloud (RGB, material, element, temperature, SVF, shortwave)
     scene.glb.gz         grey backdrop mesh; fetched only when "Solid mesh" is switched on
+    glints.json          layout of glints.bin
+    glints.bin.gz        where each standpoint's glint comes from (glass/water patches)
 ```
 
 ## Load order and compression
@@ -38,6 +40,7 @@ The last steps of `scripts/mrt_chain.py`, or by hand (with `URF_BLOCK` set):
 python scripts/precompute_attribution.py   # manifest.json, attribution.bin
 python scripts/make_web_assets.py          # mrt_surface.glb, scene.glb, scene.json
 python scripts/make_point_cloud.py         # cloud.bin, cloud.json
+python scripts/glint_sources.py           # glints.bin, glints.json (after make_web_assets)
 ```
 
 Sizes are set in `site.toml` `[web]`:
@@ -78,6 +81,23 @@ then open <http://localhost:8000/>.
 
 Updating: rebuild `data/`, copy it over, and commit. Browsers cache by URL; a hard reload
 (Ctrl+F5) shows the new data straight away.
+
+## Glints: where they come from
+
+`scripts/glint_sources.py` repeats notebook 06's glint pass on the viewer's standpoints and records
+every source patch → standpoint glint. It checks that these sum to the stored grid's value.
+
+- **Click a standpoint that receives a glint:** yellow lines run to the glass or water patches that
+  send it. The panel shows how many patches there are, and the strongest one's material and distance.
+- **"Glint sources" layer:** every such patch, coloured cyan to white by the glint it delivers to the
+  whole grid (log scale, 0.1–100 W/m²).
+
+A source is a single point of the cloud, with that point's own normal. Because those normals are
+noisy, each point acts as a tiny tilted mirror. That is why a weak glint can reach open ground from
+a facade patch more than a kilometre away. The 13:00 slot:
+
+- 19,616 source patches (19,129 glass, 487 water);
+- the median lit standpoint gets its glint from one patch.
 
 ## Visitor counting
 
@@ -122,10 +142,11 @@ Dubai, 13:00 slot, built 2026-09-27:
 | attribution.bin.gz | 23.4 MB (34.4 raw) | first |
 | mrt_surface.glb.gz | 3.4 MB (8.4 raw) | first |
 | cloud.bin.gz | 38.4 MB (49.5 raw) | streamed after the page opens |
+| glints.bin.gz | 0.5 MB (2.7 raw) | after the page opens |
 | scene.glb.gz | 18.7 MB (27.4 raw) | only when "Solid mesh" is switched on |
 | *.json | < 10 kB each | first |
 
-Total 84 MB. Measured in headless Edge, 40 ms latency:
+Total 85 MB. Measured in headless Edge, 40 ms latency:
 
 | connection | page usable | point cloud in |
 |---|---|---|

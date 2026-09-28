@@ -73,7 +73,7 @@ async function fetchData(name, onBytes = () => {}) {
 
 const parseGltf = (buf) => new Promise((res, rej) => new GLTFLoader().parse(buf, DATA, res, rej));
 
-const TYPES = { float32: Float32Array, uint16: Uint16Array, uint8: Uint8Array };
+const TYPES = { float32: Float32Array, uint32: Uint32Array, uint16: Uint16Array, uint8: Uint8Array };
 
 /** Column-major blocks out of a packed .bin. Each block is copied via slice() rather than
  *  viewed in place: a typed-array view needs its byte offset to be a multiple of the element
@@ -202,6 +202,90 @@ async function init() {
   setTimeout(() => { $('loading').style.display = 'none'; }, 450);
 
   loadCloud(cloudMeta);   // not awaited: the view is already interactive
+  loadGlints();           // likewise; optional (older builds have no glints.json)
+  if (location.hash === '#debug') window.urfDebug = { state, V, select };   // headless tests only
+}
+
+/* Where each standpoint's glint comes from (scripts/glint_sources.py): per standpoint row, the
+ * glass/water patches whose mirrored sunbeam reaches it, strongest first, with the W/m2 each
+ * delivers to the body. A click on a lit standpoint draws a line to each; the "Glint sources"
+ * layer shows every patch, coloured by what it delivers over the whole grid. */
+async function loadGlints() {
+  try {
+    const res = await fetch(`${DATA}glints.json`);
+    if (!res.ok) return;
+    const meta = await res.json();
+    if (meta.n_points !== state.N) {
+      console.warn(`glints.json is for ${meta.n_points} standpoints, the surface has ${state.N} -- ignored`);
+      return;
+    }
+    const G = unpack(await fetchData('glints.bin'), meta);
+    const p = G.src_pos.data, n = meta.n_sources;
+    const pos = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) {             // ENU about origin_enu -> the viewer's (e, u, -n)
+      pos[k * 3] = p[k * 3]; pos[k * 3 + 1] = p[k * 3 + 2]; pos[k * 3 + 2] = -p[k * 3 + 1];
+    }
+    state.G = { ...G, pos, meta };
+    buildGlintLayer();
+    $('l-glint').disabled = false;
+    $('n-glint').textContent = `${(n / 1000).toFixed(1)}k`;
+    if (state.picked >= 0) { renderGlintRays(state.picked); renderPanel(); }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function buildGlintLayer() {
+  const { G } = state;
+  const n = G.meta.n_sources, tot = G.src_total.data;
+  const lo = 0.1, hi = 100, llo = Math.log10(lo), lspan = Math.log10(hi) - llo;   // W/m2, log
+  // cyan -> white: apart from every MRT and cloud colour ramp, so a source never reads as a value
+  const c0 = [0, 140, 200], c1 = [235, 255, 255];
+  const col = new Float32Array(n * 3);
+  for (let k = 0; k < n; k++) {
+    const t = Math.min(1, (Math.log10(Math.max(tot[k], lo)) - llo) / lspan);
+    col.set(linearRgb(c0.map((v, j) => v + (c1[j] - v) * t)), k * 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(G.pos, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  V.glintLayer = new THREE.Points(g, new THREE.PointsMaterial({ size: 6, sizeAttenuation: false, vertexColors: true }));
+  V.glintLayer.visible = $('l-glint').checked;
+  V.glintLayer.renderOrder = 2;
+  V.scene.add(V.glintLayer);
+}
+
+/** Lines from standpoint `i` to the patches its glint comes from, drawn over everything: the paths
+ *  are unobstructed by construction, and a line hidden behind the cloud would explain nothing. */
+function renderGlintRays(i) {
+  if (V.glintRays) {
+    V.scene.remove(V.glintRays);
+    V.glintRays.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
+    V.glintRays = null;
+  }
+  const { G } = state;
+  if (!G || i < 0) return;
+  const a = G.row_start.data[i], b = G.row_start.data[i + 1];
+  if (b <= a) return;
+  const P = V.positions, sp = [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]];
+  const line = new Float32Array((b - a) * 6), dots = new Float32Array((b - a) * 3);
+  for (let q = a; q < b; q++) {
+    const k = G.pair_src.data[q], o = (q - a);
+    line.set(sp, o * 6);
+    line.set(G.pos.subarray(k * 3, k * 3 + 3), o * 6 + 3);
+    dots.set(G.pos.subarray(k * 3, k * 3 + 3), o * 3);
+  }
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.BufferAttribute(line, 3));
+  const dg = new THREE.BufferGeometry();
+  dg.setAttribute('position', new THREE.BufferAttribute(dots, 3));
+  const over = { depthTest: false, depthWrite: false, transparent: true };
+  const rays = new THREE.Group();
+  rays.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xffd23f, opacity: 0.95, ...over })));
+  rays.add(new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xffd23f, size: 11, sizeAttenuation: false, ...over })));
+  for (const c of rays.children) c.renderOrder = 998;
+  V.glintRays = rays;
+  V.scene.add(rays);
 }
 
 async function loadCloud(meta) {
@@ -630,6 +714,7 @@ function select(i) {
   $('panel').classList.remove('empty');
   $('panel-body').hidden = false;
   renderPanel();
+  renderGlintRays(i);
 }
 
 /* ---------------------------------------------------------------- panel */
@@ -724,6 +809,16 @@ function renderPanel() {
   const east = p[i * 3] + o[0], north = -p[i * 3 + 2] + o[1], up = p[i * 3 + 1] + o[2];
 
   const zero = (v) => (v > 0 ? '' : ' class="zero"');
+  // Where the glint comes from: patch count and the strongest one (the lines drawn in the view).
+  let glintFrom = '';
+  const G = state.G;
+  if (G && spec > 0) {
+    const a = G.row_start.data[i], b = G.row_start.data[i + 1], k = G.pair_src.data[a];
+    const d = Math.hypot(G.pos[k * 3] - p[i * 3], G.pos[k * 3 + 1] - p[i * 3 + 1], G.pos[k * 3 + 2] - p[i * 3 + 2]);
+    const what = (M.levels.l3.pretty ?? M.levels.l3.labels)[G.src_mat.data[k]].toLowerCase();
+    glintFrom = `<dt>Glint from</dt><dd>${b - a} patch${b - a > 1 ? 'es' : ''}; strongest: ${what}, ` +
+                `${f0(d)} m away</dd>`;
+  }
   $('readout-grid').innerHTML = `
     <dt>Longwave only</dt><dd>${mrtLw.toFixed(2)} °C</dd>
     <dt>Shortwave adds</dt><dd>${signed(mrt - mrtLw)} K</dd>
@@ -731,7 +826,8 @@ function renderPanel() {
     <dt>Longwave E<sub>lw</sub></dt><dd>${f1(eLw)} W/m²</dd>
     <dt>Shortwave, diffuse + reflected</dt><dd>${f1(eSwD)} W/m²</dd>
     <dt>Direct sun on body</dt><dd${zero(direct)}>${f1(direct)} W/m²</dd>
-    <dt>Specular glint</dt><dd${zero(spec)}>${f1(spec)} W/m²</dd>
+    <dt>Specular glint</dt><dd${zero(spec)}>${spec > 0 && spec < 1 ? spec.toFixed(2) : f1(spec)} W/m²</dd>
+    ${glintFrom}
     <dt>Absorbed flux</dt><dd>${f1(flux)} W/m²</dd>
     <div class="sep"></div>
     <dt>Position (E, N)</dt><dd>${east.toFixed(1)}, ${north.toFixed(1)} m</dd>
@@ -864,6 +960,7 @@ function buildChrome() {
   });
 
   $('l-cloud').addEventListener('change', (e) => { if (V.cloud) V.cloud.pts.visible = e.target.checked; });
+  $('l-glint').addEventListener('change', (e) => { if (V.glintLayer) V.glintLayer.visible = e.target.checked; });
   $('l-mrt').addEventListener('change', (e) => {
     V.mrtMesh.visible = e.target.checked;
     if (!e.target.checked) $('hover').classList.remove('on');
@@ -920,6 +1017,7 @@ function buildChrome() {
     if (e.key === 'Escape') {
       state.picked = -1;
       V.marker.visible = false;
+      renderGlintRays(-1);
       $('panel').classList.add('empty');
       $('panel-body').hidden = true;
     }
