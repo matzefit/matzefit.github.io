@@ -3,14 +3,20 @@
    best against it, and it keeps the UI from competing with the data. Three columns --
    scene controls left, stage centre, the selected standpoint's budget right. */
 
+/* Palette follows the MIT Senseable City Lab house style: pitch-black chrome, the 3D stage in
+   the SCL neutral grey. --stage is read by app.js for the WebGL clear colour and the distance
+   fog, so the canvas and the CSS never disagree. */
 :root {
-  --bg: #0f1216;
-  --panel: #171b21;
-  --panel-2: #1e242c;
-  --line: #2b323c;
-  --text: #e6eaef;
-  --muted: #9aa5b1;
-  --faint: #6b7683;
+  --bg: #000000;
+  --panel: #000000;
+  --panel-2: #0d0d0d;
+  --line: #262626;
+  --stage: #2e2e2e;      /* dark grey, deliberately not the panels' black: the pale facades and the
+                            sand plots keep an edge against it, and inferno's dark low end still
+                            separates. #949494 (the guideline grey) and #7a7a7a washed the cloud out. */
+  --text: #f2f2f2;
+  --muted: #a6a6a6;
+  --faint: #737373;
   --accent: #6cc4f5;
   --warn: #f5b26c;
   --side-w: 262px;
@@ -26,15 +32,27 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
+  font-weight: 600;                    /* Instrument Sans SemiBold, the SCL house weight */
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
 
 #app { display: flex; height: 100%; }
-#stage { position: relative; flex: 1; min-width: 0; }
+#stage { position: relative; flex: 1; min-width: 0; background: var(--stage); }
+/* The lab lockup: bottom of the left column, so it sits in the page's corner on a black ground
+   (the SVG is white on transparent, so it must not go over the grey stage). */
+/* Sticky, not just last: the sidebar scrolls, and margin-top:auto would park the lockup below
+   the fold on a short window. */
+#lab {
+  position: sticky; bottom: 0; margin-top: auto; align-self: flex-start;
+  padding: 10px 0 2px; background: var(--panel); opacity: .85;
+}
+#lab:hover { opacity: 1; }
+#lab img { display: block; width: 138px; height: auto; }
+#drawer-tabs { display: none; }        /* phone only -- the media query at the end turns it on */
 #view { display: block; width: 100%; height: 100%; }
 
 /* ---------- left sidebar ---------- */
@@ -50,6 +68,9 @@ html, body {
 #titlecard p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
 #titlecard #conds { margin-top: 6px; line-height: 1.45; color: var(--text); font-variant-numeric: tabular-nums; }
 #titlecard #conds-src { font-size: 10.5px; color: var(--faint); }
+#titlecard #slots { margin-top: 6px; color: var(--muted); }
+#titlecard #slots a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--faint); }
+#titlecard #slots a.current { font-weight: 600; border-bottom: 2px solid var(--text); }
 
 .grp { display: flex; flex-direction: column; gap: 7px; }
 .grp > h2 {
@@ -115,6 +136,10 @@ input[type=range]::-moz-range-thumb {
   display: flex; justify-content: space-between;
   font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 3px;
 }
+#legend-swatches { display: flex; flex-wrap: wrap; gap: 2px 8px; margin-top: 3px; }
+#legend-swatches:empty { display: none; }
+#legend-swatches .swatch { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--muted); }
+#legend-swatches .swatch i { width: 9px; height: 9px; border-radius: 2px; border: 1px solid var(--line); }
 #legend-note { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
 #legend-note:empty { display: none; }
 
@@ -225,129 +250,45 @@ input[type=range]::-moz-range-thumb {
   #sidebar { flex-basis: 220px; }
   #panel { flex: 0 0 330px; width: 330px; }
 }
-
-/* ---------- phones ----------
-   The stage takes the whole screen. Scene controls slide in from the left as a drawer
-   (#menu-btn), the selected standpoint's budget rises as a bottom sheet that peeks at the
-   MRT readout and expands on demand, and a mini legend keeps the colour scale on screen. */
-
-.m-only { display: none; }
-
-@media (max-width: 820px), (max-height: 520px) and (pointer: coarse) {
-  html, body { height: 100dvh; }
-  #app { display: block; position: relative; height: 100dvh; overflow: hidden; }
-  #stage { position: absolute; inset: 0; }
-  .m-only { display: revert; }
-
-  .icon-btn {
-    width: 34px; height: 34px; display: grid; place-items: center; padding: 0;
-    font: inherit; font-size: 22px; line-height: 1; color: var(--muted);
-    background: none; border: none; border-radius: 6px; cursor: pointer;
-  }
-
-  #menu-btn {
-    position: absolute; z-index: 6;
-    top: calc(12px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left));
-    display: inline-flex; align-items: center; gap: 7px;
-    font: inherit; font-size: 13px; color: var(--text);
-    background: rgba(23,27,33,.92); border: 1px solid var(--line); border-radius: 100px;
-    padding: 8px 14px 8px 12px; cursor: pointer;
-  }
-
-  #hint {
-    top: auto; bottom: calc(76px + env(safe-area-inset-bottom));
-    max-width: calc(100% - 32px); text-align: center; font-size: 12px;
-  }
-  #hover { display: none; }
-
-  #mini-legend {
-    position: absolute; z-index: 4;
-    left: calc(12px + env(safe-area-inset-left)); right: calc(12px + env(safe-area-inset-right));
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    max-width: 340px; margin: 0 auto; pointer-events: none;
-    background: rgba(23,27,33,.9); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 7px 10px 6px;
-  }
-  #mini-label { font-size: 11px; color: var(--muted); margin-bottom: 4px;
-                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #mini-bar { height: 7px; border-radius: 3px; border: 1px solid var(--line); }
-  #mini-legend .ticks { font-size: 10px; margin-top: 2px; }
-
-  /* drawer */
-  #sidebar {
-    position: fixed; z-index: 30; top: 0; bottom: 0; left: 0;
-    width: min(86vw, 320px);
-    padding: calc(16px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))
-             calc(18px + env(safe-area-inset-left));
-    transform: translateX(-102%); transition: transform .26s ease;
-    box-shadow: 0 0 40px rgba(0,0,0,.5);
-  }
-  body.drawer-open #sidebar { transform: none; }
-  #drawer-close { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 8px; }
-  #titlecard { padding-right: 32px; }
-
-  #scrim {
-    position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.45);
-    opacity: 0; pointer-events: none; transition: opacity .26s;
-  }
-  body.drawer-open #scrim { opacity: 1; pointer-events: auto; }
-
-  /* bigger touch targets in the drawer */
-  .chk { font-size: 14px; min-height: 32px; }
-  .chk input { width: 18px; height: 18px; }
-  .sld { font-size: 13px; min-height: 32px; }
-  .sld > span { flex-basis: 92px; }
-  select, #reset { font-size: 16px; padding: 9px 10px; }   /* 16px stops iOS zoom-on-focus */
-  .chip { font-size: 13px; padding: 6px 11px 6px 8px; }
-  .grp > h2 { font-size: 11px; }
-  .grp > h2 .all { font-size: 12px; padding: 4px 8px; }
-  input[type=range] { height: 4px; }
-  input[type=range]::-webkit-slider-thumb { width: 20px; height: 20px; }
-  input[type=range]::-moz-range-thumb { width: 20px; height: 20px; }
-
-  /* bottom sheet */
-  #panel {
-    position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; width: auto;
-    max-height: 72dvh; border: none; border-top: 1px solid var(--line);
-    border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.4);
-    padding-bottom: env(safe-area-inset-bottom);
-    transition: transform .26s ease;
-  }
-  #panel.empty { transform: translateY(105%); visibility: hidden; }
-  #panel.peek { max-height: calc(128px + env(safe-area-inset-bottom)); overflow: hidden; }
-  body.picked #mini-legend { display: none; }
-
-  #sheet-bar {
-    position: sticky; top: 0; z-index: 3; height: 30px;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--panel);
-  }
-  #sheet-toggle {
-    flex: 1; align-self: stretch; display: grid; place-items: center;
-    background: none; border: none; padding: 0; cursor: pointer;
-  }
-  #sheet-toggle .grip { width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
-  #sheet-close { position: absolute; right: 6px; top: 0; height: 30px; }
-
-  #readout { padding: 2px 18px 12px; }
-  #mrt-value { font-size: 32px; }
-  #readout-grid { font-size: 13px; }
-  #bands { top: 30px; padding: 10px 18px 0; }
-  #bands button { font-size: 13.5px; padding: 9px 4px; }
-  #levels { padding: 14px 18px 0; }
-  .bar-row .top { font-size: 13px; }
-  #panel-foot { padding: 4px 18px 20px; }
+@media (max-width: 820px) and (min-width: 721px) {
+  #app { flex-direction: column; overflow-y: auto; }
+  #sidebar, #panel { flex: 0 0 auto; width: 100%; border: none; border-bottom: 1px solid var(--line); }
+  #stage { flex: 0 0 60vh; order: -1; }
 }
 
-/* landscape phones: too short for a bottom sheet, so the budget docks on the right instead */
-@media (max-height: 520px) and (pointer: coarse) and (orientation: landscape) {
-  #panel, #panel.peek {
-    left: auto; top: 0; width: min(380px, 48vw); max-height: none; overflow-y: auto;
-    border-top: none; border-left: 1px solid var(--line); border-radius: 0;
-    padding-right: env(safe-area-inset-right);
+/* ---------- phone ----------
+   Stacking three columns leaves a postage-stamp 3D view and a long scroll, so on a phone the
+   stage fills the screen and the two panels become drawers over it, one open at a time.
+   Heights use dvh: on iOS Safari vh keeps the space of the collapsed toolbar, so a 100vh
+   drawer would sit partly under it. */
+@media (max-width: 720px) {
+  html, body { overflow: hidden; }
+  #app { display: block; height: 100%; }
+  #stage { position: fixed; inset: 0; }
+  #drawer-tabs {
+    display: flex; position: fixed; z-index: 5; left: 0; right: 0; bottom: 0;
+    border-top: 1px solid var(--line); background: var(--panel);
+    padding-bottom: env(safe-area-inset-bottom);      /* clear of the home indicator */
   }
-  #panel.empty { transform: translateX(105%); }
-  #sheet-toggle .grip { display: none; }
-  #hint { top: calc(16px + env(safe-area-inset-top)); bottom: auto; }
-  #mini-legend { right: auto; width: 260px; margin: 0; }
+  #drawer-tabs button {
+    flex: 1; min-height: 46px; background: none; border: 0; color: var(--muted);
+    font: inherit; font-size: 13px; cursor: pointer;
+  }
+  #drawer-tabs button + button { border-left: 1px solid var(--line); }
+  #drawer-tabs button[aria-expanded="true"] { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+  #sidebar, #panel {
+    position: fixed; z-index: 4; left: 0; right: 0; width: auto;
+    bottom: calc(46px + env(safe-area-inset-bottom));
+    max-height: 62dvh; overflow-y: auto;
+    border: 0; border-top: 1px solid var(--line);
+    transform: translateY(101%); visibility: hidden;
+    transition: transform .22s ease, visibility .22s;
+  }
+  body.drawer-sidebar #sidebar, body.drawer-panel #panel { transform: none; visibility: visible; }
+  /* The hint would sit under a drawer and repeat what the tabs say. */
+  #hint { display: none; }
+  #panel-foot { padding-bottom: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #sidebar, #panel { transition: none; }
 }
