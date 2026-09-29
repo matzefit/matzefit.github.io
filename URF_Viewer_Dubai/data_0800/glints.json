@@ -1,0 +1,81 @@
+{
+  "format": "urf-glints/1",
+  "bin": "glints.bin",
+  "bin_bytes": 1040379,
+  "blocks": [
+    {
+      "name": "row_start",
+      "dtype": "uint32",
+      "offset": 0,
+      "length": 428680,
+      "cols": 1,
+      "note": "CSR offsets into pair_*, one per viewer standpoint row + 1"
+    },
+    {
+      "name": "pair_src",
+      "dtype": "uint32",
+      "offset": 428680,
+      "length": 34612,
+      "cols": 1,
+      "note": "index into src_*"
+    },
+    {
+      "name": "pair_w",
+      "dtype": "float32",
+      "offset": 463292,
+      "length": 34612,
+      "cols": 1,
+      "note": "W/m2 on the body from this source (f_p-weighted)"
+    },
+    {
+      "name": "rest_w",
+      "dtype": "float32",
+      "offset": 497904,
+      "length": 428676,
+      "cols": 1,
+      "note": "W/m2 from sources beyond the kept ones, per standpoint row"
+    },
+    {
+      "name": "src_pos",
+      "dtype": "float32",
+      "offset": 926580,
+      "length": 65028,
+      "cols": 3,
+      "note": "ENU minus scene.json origin_enu, m"
+    },
+    {
+      "name": "src_total",
+      "dtype": "float32",
+      "offset": 991608,
+      "length": 21676,
+      "cols": 1,
+      "note": "W/m2 summed over all viewer standpoints"
+    },
+    {
+      "name": "src_n",
+      "dtype": "uint32",
+      "offset": 1013284,
+      "length": 21676,
+      "cols": 1,
+      "note": "viewer standpoints reached"
+    },
+    {
+      "name": "src_mat",
+      "dtype": "uint8",
+      "offset": 1034960,
+      "length": 5419,
+      "cols": 1,
+      "note": "index into manifest.json levels.l3.labels"
+    }
+  ],
+  "n_points": 107169,
+  "n_sources": 5419,
+  "n_pairs": 8653,
+  "max_per_standpoint": 48,
+  "grid_stride": 2,
+  "src_total_range": [
+    0.008132061921060085,
+    273.73486346006393
+  ],
+  "note": "glint pass of 06_mrt_analysis B2 on the viewer standpoints; sources are cloud points on glass/water with their own (noisy) normals"
+}
