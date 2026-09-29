@@ -24,8 +24,37 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { COLORMAPS } from './colormaps.js';
 
-const DATA = './data/';
+// Time slots: every slot's data sit in their own folder (the reference slot in data/, others in
+// data_<hhmm>/), listed in slots.json; ?slot=<hhmm> picks one. Only digits pass, so the query
+// can never point anywhere else.
+const SLOT = (() => {
+  const s = new URLSearchParams(location.search).get('slot') || '';
+  return /^[0-9]{3,4}$/.test(s) ? s : null;
+})();
+const DATA = SLOT ? `./data_${SLOT}/` : './data/';
 const $ = (id) => document.getElementById(id);
+
+async function renderSlots() {
+  let list;
+  try {
+    const res = await fetch('./slots.json', { cache: 'no-cache' });
+    if (!res.ok) return;
+    list = (await res.json()).slots || [];
+  } catch { return; }
+  if (list.length < 2) return;
+  const here = SLOT ? `data_${SLOT}` : 'data';
+  const el = $('slots');
+  el.textContent = 'Time: ';
+  list.forEach((s, i) => {
+    if (i) el.append(' · ');
+    const a = document.createElement('a');
+    a.textContent = s.label;
+    a.href = (s.dir === 'data' ? location.pathname : `?slot=${s.dir.replace('data_', '')}`) + location.hash;
+    if (s.dir === here) a.className = 'current';
+    el.append(a);
+  });
+}
+renderSlots();
 
 /* ---------------------------------------------------------------- loading */
 
@@ -152,6 +181,28 @@ const RAMP_STOPS = 16;
 const SIGMA = 5.670374419e-8;
 const M_SWC = () => state.M.body.sw_coeff;       // a_k / eps_p, the shortwave weight in the MRT flux
 const NONE_RGB = [92, 99, 110];                   // a log field's "none" (value 0): neutral grey
+const cssColor = (c) => (Array.isArray(c) ? `rgb(${c[0]},${c[1]},${c[2]})` : c);
+
+/* The 3D backdrop's colour lives in style.css (--stage) so the canvas and the page around it are
+   set in one place; three.js needs it as a number. */
+const STAGE_COLOR = () => {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--stage').trim();
+  const m = /^#([0-9a-f]{6})$/i.exec(v);
+  return m ? parseInt(m[1], 16) : 0x949494;
+};
+
+/* Phone drawers: the tab bar is display:none above 720px, so its computed style is what says
+   whether this layout is in use -- one source of truth with the media query, no second breakpoint
+   in JS to drift from it. One drawer at a time; `toggle` lets a tab close its own drawer. */
+const drawersActive = () => getComputedStyle(document.getElementById('drawer-tabs')).display !== 'none';
+function openDrawer(which, toggle = false) {
+  const open = toggle && document.body.classList.contains(`drawer-${which}`) ? null : which;
+  document.body.classList.remove('drawer-sidebar', 'drawer-panel');
+  if (open) document.body.classList.add(`drawer-${open}`);
+  for (const b of document.querySelectorAll('#drawer-tabs button')) {
+    b.setAttribute('aria-expanded', String(b.dataset.drawer === open));
+  }
+}
 
 const state = {
   M: null, B: null, N: 0, C: null, CB: null,
@@ -353,6 +404,39 @@ function buildFields() {
     { id: 'glint_body', label: 'Glint on the body', unit: 'W/m²', cmap: 'YlOrRd', log: [0.1, 100],
       none: 'grey: no glint reaches this standpoint', digits: 1, values: B.e_sw_specular.data },
   ];
+
+  // Attribution over the grid: what each standpoint's radiation comes FROM. The l3 blocks hold every
+  // material's body-weighted contribution, longwave and shortwave apart; together they enter the MRT
+  // flux as lw + (a_k/eps_p) sw -- the same sum the readout panel splits into shares. Glints are NOT
+  // in it (they bypass the ray budget); their own two layers are above.
+  const L3 = state.M.levels.l3;
+  const names3 = L3.pretty ?? L3.labels;
+  const mat = (i, k) => B.l3_lw.at(i, k) + M_SWC() * B.l3_sw.at(i, k);
+  const iGlass = L3.labels.indexOf('glass');
+  if (iGlass >= 0) {
+    // What glazing adds, as MRT: the standpoint's MRT minus the MRT of the same flux without the
+    // glass contribution -- the same construction as the glint layers, so the two are comparable.
+    state.fields.push({
+      id: 'glazing_mrt', label: 'MRT from glazing', unit: 'K', cmap: 'YlOrRd', log: [0.05, 20],
+      none: 'grey: no glazing in this standpoint’s view', digits: 2,
+      values: derive((i) => {
+        const c = mat(i, iGlass);
+        if (!(c > 0)) return 0;
+        const t = B.mrt_combined.at(i) + 273.15;
+        return t - Math.pow(Math.max(t ** 4 - c / SIGMA, 0), 0.25);
+      }),
+    });
+  }
+  // Dominant contributor: the material sending this standpoint the most. Coloured by the material's
+  // own colour, the same key the point cloud and the readout use.
+  state.fields.push({
+    id: 'dominant_mat', label: 'Dominant material', unit: '', palette: L3.colors, classLabels: names3,
+    values: derive((i) => {
+      let best = 0, bestV = -Infinity;
+      for (let k = 0; k < names3.length; k++) { const v = mat(i, k); if (v > bestV) { bestV = v; best = k; } }
+      return best;
+    }),
+  });
   for (const f of state.fields) f.range = f.log ?? rangeOf(f.values, f.exact);
   state.field = state.fields[0];
 
@@ -518,7 +602,7 @@ function buildViewer(mrtGltf, meta) {
   const canvas = $('view');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setClearColor(0x0f1216);
+  renderer.setClearColor(STAGE_COLOR());
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, 1, 0.5, 6000);
@@ -577,7 +661,8 @@ function buildViewer(mrtGltf, meta) {
   mrtGeom.computeBoundingBox();
   V.center = mrtGeom.boundingBox.getCenter(new THREE.Vector3());
   V.span = mrtGeom.boundingBox.getSize(new THREE.Vector3()).length();
-  scene.fog = new THREE.Fog(0x0f1216, V.span * 0.9, V.span * 3.2);
+  // Fog must be the stage colour or distant geometry fades to a colour the backdrop never has.
+  scene.fog = new THREE.Fog(STAGE_COLOR(), V.span * 0.9, V.span * 3.2);
   controls.minDistance = 3;
   controls.maxDistance = V.span * 2.5;
   resetView();
@@ -627,9 +712,12 @@ function applyField(field) {
   const llo = field.log ? Math.log10(lo) : 0, lspan = field.log ? Math.log10(hi) - llo : 1;
   const attr = V.mrtMesh.geometry.attributes.color;
   const col = attr.array;
+  // A categorical field carries its classes' own colours instead of a ramp.
+  const pal = field.palette && field.palette.map((c) => (Array.isArray(c) ? c : [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16))));
   for (let i = 0; i < state.N; i++) {
     const v = field.values[i];
-    const [r, g, b] = field.log && !(v > 0) ? NONE_RGB
+    const [r, g, b] = pal ? (pal[v] ?? NONE_RGB)
+      : field.log && !(v > 0) ? NONE_RGB
       : sampleCmap(field.cmap, field.log ? (Math.log10(Math.max(v, lo)) - llo) / lspan : (v - lo) * inv);
     col[i * 3] = srgbToLinear(r / 255) * 255;
     col[i * 3 + 1] = srgbToLinear(g / 255) * 255;
@@ -637,17 +725,29 @@ function applyField(field) {
   }
   attr.needsUpdate = true;
 
+  // Categorical: swatches of the classes actually present here instead of the bar and its ticks.
+  const sw = $('legend-swatches');
+  sw.textContent = '';
+  $('legend-bar').style.display = pal ? 'none' : '';
+  $('legend-bar').parentElement.querySelector('.ticks').style.display = pal ? 'none' : '';
+  if (pal) {
+    const seen = new Set(field.values);
+    field.classLabels.forEach((name, k) => {
+      if (!seen.has(k)) return;
+      const el = document.createElement('span');
+      el.className = 'swatch';
+      el.innerHTML = `<i style="background:${cssColor(field.palette[k])}"></i>${name}`;
+      sw.append(el);
+    });
+    $('legend-note').textContent = 'the material sending this standpoint the most (glints not included)';
+    return;
+  }
   $('legend-bar').style.background = cmapCss(field.cmap);
   const d = field.log ? (lo < 1 ? String(lo).split('.')[1]?.length ?? 0 : 0)
     : field.unit === '°C' || field.unit === 'K' ? 1 : 0;
   $('legend-lo').textContent = field.discrete ? 'no' : `${lo.toFixed(d)} ${field.unit}`.trim();
   $('legend-hi').textContent = field.discrete ? 'yes' : `${field.log ? '≥ ' : ''}${hi.toFixed(field.log ? 0 : d)} ${field.unit}`.trim();
   $('legend-note').textContent = field.log ? `log scale · ${field.none}` : '';
-  // phone layout: the sidebar is off-screen, so the stage carries a compact copy
-  $('mini-bar').style.background = $('legend-bar').style.background;
-  $('mini-lo').textContent = $('legend-lo').textContent;
-  $('mini-hi').textContent = $('legend-hi').textContent;
-  $('mini-label').textContent = `${field.label}${field.log ? ' · log' : ''}`;
 }
 
 /* -------------------------------------------------------------- picking */
@@ -677,21 +777,10 @@ function pickAt(clientX, clientY) {
 
 function bindPointer(canvas) {
   let moved = false, downAt = null, hoverJob = 0;
-  const down = new Set();     // active pointers: a two-finger pinch/pan is never a tap
 
-  canvas.addEventListener('pointerdown', (e) => {
-    down.add(e.pointerId);
-    if (down.size === 1) moved = false;
-    else moved = true;
-    downAt = { x: e.clientX, y: e.clientY };
-  });
-  const lift = (e) => { down.delete(e.pointerId); if (!down.size) downAt = null; };
-  canvas.addEventListener('pointercancel', (e) => { moved = true; lift(e); });
+  canvas.addEventListener('pointerdown', (e) => { moved = false; downAt = { x: e.clientX, y: e.clientY }; });
   canvas.addEventListener('pointermove', (e) => {
-    // fingers wobble more than a mouse, so a tap tolerates a little more travel
-    const slop = e.pointerType === 'mouse' ? 4 : 10;
-    if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > slop) moved = true;
-    if (e.pointerType !== 'mouse') return;   // no hover readout without a hovering pointer
+    if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4) moved = true;
     // Raycasting 186,860 triangles is a few milliseconds -- fine per frame, wasteful per
     // pointer event, so coalesce into one job per animation frame.
     if (hoverJob) return;
@@ -715,7 +804,6 @@ function bindPointer(canvas) {
   });
   canvas.addEventListener('pointerleave', () => $('hover').classList.remove('on'));
   canvas.addEventListener('pointerup', (e) => {
-    lift(e);
     if (moved) return;                       // an orbit drag, not a click
     const i = pickAt(e.clientX, e.clientY);
     if (i >= 0) { select(i); window.urfTrack?.('standpoint-click'); }   // visits.js; absent = no-op
@@ -728,33 +816,12 @@ function select(i) {
   V.marker.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
   V.marker.visible = true;
   $('hint').classList.add('gone');
-  // phone layout: a fresh selection opens the sheet at its peek height, over the readout only
-  if ($('panel').classList.contains('empty')) setSheet(false);
   $('panel').classList.remove('empty');
   $('panel-body').hidden = false;
-  document.body.classList.add('picked');
   renderPanel();
   renderGlintRays(i);
-}
-
-function deselect() {
-  state.picked = -1;
-  V.marker.visible = false;
-  renderGlintRays(-1);
-  $('panel').classList.add('empty');
-  $('panel-body').hidden = true;
-  document.body.classList.remove('picked');
-}
-
-function setSheet(expanded) {
-  $('panel').classList.toggle('peek', !expanded);
-  $('panel').scrollTop = 0;
-  $('sheet-toggle').setAttribute('aria-expanded', String(expanded));
-}
-
-function setDrawer(open) {
-  document.body.classList.toggle('drawer-open', open);
-  $('menu-btn').setAttribute('aria-expanded', String(open));
+  // Phone: the budget is behind a drawer, so a tap on the surface brings it up.
+  if (drawersActive()) openDrawer('panel');
 }
 
 /* ---------------------------------------------------------------- panel */
@@ -1053,22 +1120,18 @@ function buildChrome() {
     `Cloud: ${thousands(C.n_points)} points at ${C.voxel_m.toFixed(2)} m, ` +
     `from ${thousands(C.source_points)}.`;
 
-  addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    if (document.body.classList.contains('drawer-open')) setDrawer(false);
-    else deselect();
-  });
-
-  // phone layout: drawer, bottom sheet, touch wording
-  $('menu-btn').addEventListener('click', () => setDrawer(true));
-  $('drawer-close').addEventListener('click', () => setDrawer(false));
-  $('scrim').addEventListener('click', () => setDrawer(false));
-  $('sheet-close').addEventListener('click', deselect);
-  $('sheet-toggle').addEventListener('click', () => setSheet($('panel').classList.contains('peek')));
-  $('readout').addEventListener('click', () => {
-    if ($('panel').classList.contains('peek')) setSheet(true);
-  });
-  if (matchMedia('(hover: none)').matches) {
-    $('hint').textContent = 'Tap the coloured surface to read its radiation budget';
+  for (const b of document.querySelectorAll('#drawer-tabs button')) {
+    b.addEventListener('click', () => openDrawer(b.dataset.drawer, true));
   }
+
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (document.body.className.includes('drawer-')) openDrawer(null);
+      state.picked = -1;
+      V.marker.visible = false;
+      renderGlintRays(-1);
+      $('panel').classList.add('empty');
+      $('panel-body').hidden = true;
+    }
+  });
 }

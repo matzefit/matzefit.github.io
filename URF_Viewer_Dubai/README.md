@@ -21,6 +21,45 @@ web/
     glints.bin.gz        where each standpoint's glint comes from (glass/water patches)
 ```
 
+## What the MRT surface can show
+
+One field at a time, from the "MRT surface shows" list:
+
+- **MRT, combined / longwave only / shortwave contribution**, and the longwave and shortwave
+  irradiance on the body.
+- **Direct sun on the body** — the shadow mask.
+- **MRT added by glints** and **glint on the body** — the specular pathway, log-scaled, grey
+  where no glint reaches the standpoint.
+- **MRT from glazing** — how much of the standpoint's MRT comes from glass, longwave and
+  shortwave together (13:00: median 0.6 K, p99 9.9 K, up to 68 K right in front of a facade).
+  It is the MRT minus the MRT of the same flux without the glass contribution, the same
+  construction as the glint layer, so the two are comparable. Glints are *not* in it: they are
+  a separate pathway with its own two layers.
+- **Dominant material** — which material sends this standpoint the most, in the material
+  colours (13:00: sand 37 %, asphalt 27 %, grass 13 %, render 10 %, trees 8 %).
+
+The last two come from the `l3` blocks already in `attribution.bin`, computed in the browser;
+they need no rebuild of the data.
+
+## Phones
+
+Below 720 px the 3D stage fills the screen and the two side panels become drawers, opened from
+a tab bar at the bottom ("Layers & field", "Radiation budget"); tapping a standpoint raises the
+budget drawer. Above that width the layout is unchanged. The breakpoint lives only in
+`style.css` — `app.js` asks for the tab bar's computed `display` rather than re-testing the
+width, so the two cannot drift apart.
+
+## Look
+
+The MIT Senseable City Lab house style: pitch-black chrome (`--panel`), the 3D stage in a neutral
+dark grey (`--stage`, `#2e2e2e` — deliberately not the panels' black, so the stage still reads as
+its own surface; the guideline grey `#949494` and a mid `#7a7a7a` both washed out the pale facades
+and the sand plots), Instrument Sans SemiBold from
+Google Fonts, and the lab lockup (`assets/mit-scl-logo.svg`, white on transparent) pinned in the
+bottom-left corner. `--stage` is the single source of the backdrop colour: `app.js` reads it for
+the WebGL clear colour and the distance fog, which must match or far geometry fades to a colour
+the page never shows. Swap the SVG for another approved variant and it is picked up as is.
+
 ## Load order and compression
 
 The page opens as soon as the attribution and the MRT surface have arrived. The point
@@ -57,6 +96,18 @@ pipeline from the thermal fusion. Changing only the text needs just `precompute_
 
 `precompute_attribution.py` and `make_web_assets.py` must use the same stride. Both read it
 from `site.toml`, and `make_web_assets.py` checks that the vertex and row counts match.
+
+## Time slots
+
+Each time slot has its own data folder:
+- the reference slot (13:00) in `data/`;
+- other slots in `data_<hhmm>/`, set by `block.toml` `[web] data_dir` (e.g. `web/data_1100`).
+
+`precompute_attribution.py` lists every slot it builds in `slots.json`. When there are two or
+more, the title card shows a time switcher. `?slot=1100` opens that slot; only digits are
+accepted, so the query can't point anywhere else. All slots share one geometry
+(`scripts/register_slot.py`), so a standpoint is the same place in each. Each folder is about
+83 MB; three slots stay far below the 1 GB site limit.
 
 ## Try it locally
 
