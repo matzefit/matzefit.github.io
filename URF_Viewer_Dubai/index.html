@@ -10,8 +10,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="./style.css">
-<script data-goatcounter="https://matzefit.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
 <script type="importmap">
 {
   "imports": {
@@ -31,6 +29,7 @@
       <p><span id="place"></span>, <span id="when">&mdash;</span></p>
       <p id="conds"></p>
       <p id="conds-src"></p>
+      <p id="conds-note"></p>
       <p id="slots"></p>
     </div>
 
@@ -87,9 +86,12 @@
 
     <!-- The lab's own lockup (MIT Senseable City Lab), white on transparent, as senseable.mit.edu
          uses it. Swap assets/mit-scl-logo.svg for the approved variant if this is not it. -->
-    <a id="lab" href="https://senseable.mit.edu" target="_blank" rel="noopener">
-      <img src="./assets/mit-scl-logo.svg" alt="MIT Senseable City Lab" width="153" height="22">
-    </a>
+    <div id="lab">
+      <a href="https://senseable.mit.edu" target="_blank" rel="noopener">
+        <img src="./assets/mit-scl-logo.svg" alt="MIT Senseable City Lab" width="153" height="22">
+      </a>
+      <p id="author">Matthias Fitzky · <a href="mailto:mfitzky@mit.edu">mfitzky@mit.edu</a></p>
+    </div>
   </aside>
 
   <div id="stage">
