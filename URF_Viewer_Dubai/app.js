@@ -643,6 +643,11 @@ function applyField(field) {
   $('legend-lo').textContent = field.discrete ? 'no' : `${lo.toFixed(d)} ${field.unit}`.trim();
   $('legend-hi').textContent = field.discrete ? 'yes' : `${field.log ? '≥ ' : ''}${hi.toFixed(field.log ? 0 : d)} ${field.unit}`.trim();
   $('legend-note').textContent = field.log ? `log scale · ${field.none}` : '';
+  // phone layout: the sidebar is off-screen, so the stage carries a compact copy
+  $('mini-bar').style.background = $('legend-bar').style.background;
+  $('mini-lo').textContent = $('legend-lo').textContent;
+  $('mini-hi').textContent = $('legend-hi').textContent;
+  $('mini-label').textContent = `${field.label}${field.log ? ' · log' : ''}`;
 }
 
 /* -------------------------------------------------------------- picking */
@@ -672,10 +677,21 @@ function pickAt(clientX, clientY) {
 
 function bindPointer(canvas) {
   let moved = false, downAt = null, hoverJob = 0;
+  const down = new Set();     // active pointers: a two-finger pinch/pan is never a tap
 
-  canvas.addEventListener('pointerdown', (e) => { moved = false; downAt = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('pointerdown', (e) => {
+    down.add(e.pointerId);
+    if (down.size === 1) moved = false;
+    else moved = true;
+    downAt = { x: e.clientX, y: e.clientY };
+  });
+  const lift = (e) => { down.delete(e.pointerId); if (!down.size) downAt = null; };
+  canvas.addEventListener('pointercancel', (e) => { moved = true; lift(e); });
   canvas.addEventListener('pointermove', (e) => {
-    if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4) moved = true;
+    // fingers wobble more than a mouse, so a tap tolerates a little more travel
+    const slop = e.pointerType === 'mouse' ? 4 : 10;
+    if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > slop) moved = true;
+    if (e.pointerType !== 'mouse') return;   // no hover readout without a hovering pointer
     // Raycasting 186,860 triangles is a few milliseconds -- fine per frame, wasteful per
     // pointer event, so coalesce into one job per animation frame.
     if (hoverJob) return;
@@ -699,6 +715,7 @@ function bindPointer(canvas) {
   });
   canvas.addEventListener('pointerleave', () => $('hover').classList.remove('on'));
   canvas.addEventListener('pointerup', (e) => {
+    lift(e);
     if (moved) return;                       // an orbit drag, not a click
     const i = pickAt(e.clientX, e.clientY);
     if (i >= 0) { select(i); window.urfTrack?.('standpoint-click'); }   // visits.js; absent = no-op
@@ -711,10 +728,33 @@ function select(i) {
   V.marker.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
   V.marker.visible = true;
   $('hint').classList.add('gone');
+  // phone layout: a fresh selection opens the sheet at its peek height, over the readout only
+  if ($('panel').classList.contains('empty')) setSheet(false);
   $('panel').classList.remove('empty');
   $('panel-body').hidden = false;
+  document.body.classList.add('picked');
   renderPanel();
   renderGlintRays(i);
+}
+
+function deselect() {
+  state.picked = -1;
+  V.marker.visible = false;
+  renderGlintRays(-1);
+  $('panel').classList.add('empty');
+  $('panel-body').hidden = true;
+  document.body.classList.remove('picked');
+}
+
+function setSheet(expanded) {
+  $('panel').classList.toggle('peek', !expanded);
+  $('panel').scrollTop = 0;
+  $('sheet-toggle').setAttribute('aria-expanded', String(expanded));
+}
+
+function setDrawer(open) {
+  document.body.classList.toggle('drawer-open', open);
+  $('menu-btn').setAttribute('aria-expanded', String(open));
 }
 
 /* ---------------------------------------------------------------- panel */
@@ -1014,12 +1054,21 @@ function buildChrome() {
     `from ${thousands(C.source_points)}.`;
 
   addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      state.picked = -1;
-      V.marker.visible = false;
-      renderGlintRays(-1);
-      $('panel').classList.add('empty');
-      $('panel-body').hidden = true;
-    }
+    if (e.key !== 'Escape') return;
+    if (document.body.classList.contains('drawer-open')) setDrawer(false);
+    else deselect();
   });
+
+  // phone layout: drawer, bottom sheet, touch wording
+  $('menu-btn').addEventListener('click', () => setDrawer(true));
+  $('drawer-close').addEventListener('click', () => setDrawer(false));
+  $('scrim').addEventListener('click', () => setDrawer(false));
+  $('sheet-close').addEventListener('click', deselect);
+  $('sheet-toggle').addEventListener('click', () => setSheet($('panel').classList.contains('peek')));
+  $('readout').addEventListener('click', () => {
+    if ($('panel').classList.contains('peek')) setSheet(true);
+  });
+  if (matchMedia('(hover: none)').matches) {
+    $('hint').textContent = 'Tap the coloured surface to read its radiation budget';
+  }
 }
