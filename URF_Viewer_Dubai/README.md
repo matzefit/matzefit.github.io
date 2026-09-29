@@ -130,27 +130,34 @@ switching the MRT field (`field-<id>`).
 
 ## Current build
 
-Dubai, 13:00 slot, built 2026-09-27:
+Dubai, 13:00 slot, rebuilt 2026-09-29. Changes since 2026-09-27:
+- glass with Dubai glazing values;
+- glass glints traced as continuous beams off fitted facade planes;
+- glass and water mirror their surroundings in the MRT;
+- no standpoints on the Greens lake.
 
-- **MRT surface:** 258,558 standpoints, every 2nd cell of the 1 m grid. That grid covers
-  1,034,021 standpoints after dropping those without thermal coverage.
+- **MRT surface:** 248,856 standpoints, every 2nd cell of the 1 m grid. That grid covers
+  995,192 standpoints after dropping those without thermal coverage and those on the lake.
 - **Point cloud:** 3,538,624 points, 1.19 m voxel.
 - **Backdrop mesh:** 3 m clustering.
 
 | file | size | loaded |
 |---|---|---|
-| attribution.bin.gz | 23.4 MB (34.4 raw) | first |
-| mrt_surface.glb.gz | 3.4 MB (8.4 raw) | first |
-| cloud.bin.gz | 38.4 MB (49.5 raw) | streamed after the page opens |
-| glints.bin.gz | 0.5 MB (2.7 raw) | after the page opens |
+| attribution.bin.gz | 22.5 MB (33.1 raw) | first |
+| mrt_surface.glb.gz | 3.2 MB (8.1 raw) | first |
+| cloud.bin.gz | 38.3 MB (49.5 raw) | streamed after the page opens |
+| glints.bin.gz | 0.2 MB (2.2 raw) | after the page opens |
 | scene.glb.gz | 18.7 MB (27.4 raw) | only when "Solid mesh" is switched on |
 | *.json | < 10 kB each | first |
 
-Total 85 MB. Measured in headless Edge, 40 ms latency:
+Total 83 MB. Load times, measured in headless Edge with 40 ms latency on the 85 MB build of
+2026-09-27; the files are about the same size:
 
 | connection | page usable | point cloud in |
 |---|---|---|
 | 30 Mbit/s | 12.8 s | 35.1 s |
 | local, unthrottled | 2.1 s | 15.5 s |
+
+The 2026-09-29 build passed the same headless feature and glint-source tests, with no page errors.
 
 Opening the solid mesh adds 18.7 MB.
