@@ -1,6 +1,6 @@
 {
   "format": "urf-attribution/1",
-  "generated": "2026-09-29T11:02:06.352771+00:00",
+  "generated": "2026-09-29T14:02:58.797120+00:00",
   "place": "Dubai, Barsha Heights & The Greens",
   "n_points": 246523,
   "n_points_full": 246523,
@@ -262,7 +262,7 @@
     "sun_elevation_deg": 59.08928924871957,
     "sun_azimuth_deg": 143.19247837057497,
     "note": "11:00 slot, all Greens + Barsha Heights missions; M350 RTK + H30T, gimbal -45 deg; clear sky; leaf-on",
-    "air_source": "Kestrel 10:00 route (median of 5 standpoints); GHI NCM Jumeirah 11:00"
+    "air_source": "NCM Jumeirah station, 11:00; air from ground measurements"
   },
   "grid": {
     "nx": 1023,
