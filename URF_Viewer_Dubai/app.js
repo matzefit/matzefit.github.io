@@ -32,23 +32,7 @@ const SLOT = (() => {
   return /^[0-9]{3,4}$/.test(s) ? s : null;
 })();
 const DATA = SLOT ? `./data_${SLOT}/` : './data/';
-const HERE = SLOT ? `data_${SLOT}` : 'data';
-// ?cell=<n>: open on that place of the shared standpoint lattice (set by the time links below, so
-// switching time keeps the standpoint). Digits only, like ?slot.
-const CELL = (() => {
-  const s = new URLSearchParams(location.search).get('cell') || '';
-  return /^[0-9]{1,8}$/.test(s) ? +s : -1;
-})();
 const $ = (id) => document.getElementById(id);
-
-/** The page of slot `dir`, opened on lattice cell `cell` (-1: none). */
-function slotHref(dir, cell = -1) {
-  const q = new URLSearchParams();
-  if (dir !== 'data') q.set('slot', dir.replace('data_', ''));
-  if (cell >= 0) q.set('cell', String(cell));
-  const qs = q.toString();
-  return (qs ? `?${qs}` : location.pathname) + location.hash;
-}
 
 async function renderSlots() {
   let list;
@@ -58,26 +42,19 @@ async function renderSlots() {
     list = (await res.json()).slots || [];
   } catch { return; }
   if (list.length < 2) return;
+  const here = SLOT ? `data_${SLOT}` : 'data';
   const el = $('slots');
   el.textContent = 'Time: ';
   list.forEach((s, i) => {
     if (i) el.append(' · ');
     const a = document.createElement('a');
     a.textContent = s.label;
-    a.dataset.dir = s.dir;
-    a.href = slotHref(s.dir);
-    if (s.dir === HERE) a.className = 'current';
+    a.href = (s.dir === 'data' ? location.pathname : `?slot=${s.dir.replace('data_', '')}`) + location.hash;
+    if (s.dir === here) a.className = 'current';
     el.append(a);
   });
-  updateSlotLinks();
 }
 renderSlots();
-
-/** Keep the time links on the picked place, so the switch shows the same standpoint at another time. */
-function updateSlotLinks() {
-  const cell = state.picked >= 0 && H.slots ? H.slots[H.here].cells[state.picked] : -1;
-  for (const a of document.querySelectorAll('#slots a[data-dir]')) a.href = slotHref(a.dataset.dir, cell);
-}
 
 /* ---------------------------------------------------------------- loading */
 
@@ -107,8 +84,8 @@ async function fetchProgress(url, onBytes) {
  *  and gzip cuts the first download by over a third. Decompression is keyed on the gzip magic
  *  bytes, not on the file name, so a host that already decoded the file (Content-Encoding)
  *  works too. Progress counts the bytes actually transferred. */
-async function fetchData(name, onBytes = () => {}, base = DATA) {
-  for (const url of [`${base}${name}.gz`, `${base}${name}`]) {
+async function fetchData(name, onBytes = () => {}) {
+  for (const url of [`${DATA}${name}.gz`, `${DATA}${name}`]) {
     let buf;
     try {
       buf = await fetchProgress(url, onBytes);
@@ -120,12 +97,12 @@ async function fetchData(name, onBytes = () => {}, base = DATA) {
     const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
     return new Response(stream).arrayBuffer();
   }
-  throw new Error(`${name}: not found in ${base} (neither .gz nor plain)`);
+  throw new Error(`${name}: not found in ${DATA} (neither .gz nor plain)`);
 }
 
 const parseGltf = (buf) => new Promise((res, rej) => new GLTFLoader().parse(buf, DATA, res, rej));
 
-const TYPES = { float32: Float32Array, uint32: Uint32Array, uint16: Uint16Array, int16: Int16Array, uint8: Uint8Array };
+const TYPES = { float32: Float32Array, uint32: Uint32Array, uint16: Uint16Array, uint8: Uint8Array };
 
 /** Column-major blocks out of a packed .bin. Each block is copied via slice() rather than
  *  viewed in place: a typed-array view needs its byte offset to be a multiple of the element
@@ -277,203 +254,7 @@ async function init() {
 
   loadCloud(cloudMeta);   // not awaited: the view is already interactive
   loadGlints();           // likewise; optional (older builds have no glints.json)
-  if (location.hash === '#debug') window.urfDebug = { state, V, H, select };   // headless tests only
-  await loadHistoryMeta();
-  if (CELL >= 0) openCell(CELL);   // arrived from another time's link: same place, this time
-}
-
-/* ------------------------------------------------------ history over the day */
-
-/* The same place at every time it was flown (scripts/web_history.py -> web/history.json, history.bin).
- * All slots share one standpoint lattice; a slot's rows are its lattice cells in order, so a cell maps
- * to a row by binary search in that slot's sorted cell list. history.json (8 kB) is read at start, the
- * 13 MB history.bin only the first time a standpoint is picked. */
-const H = { meta: null, here: -1, slots: null, loading: null, failed: false };
-
-async function loadHistoryMeta() {
-  try {
-    const res = await fetch('./history.json', { cache: 'no-cache' });
-    if (!res.ok) return;
-    const meta = await res.json();
-    const here = meta.slots.findIndex((s) => s.dir === HERE);
-    // A history built from another build of any slot would show that slot's old values, or put rows
-    // at the wrong place: every slot's attribution build stamp must be the one it was made from.
-    const stamps = await Promise.all(meta.slots.map((s) => (s.dir === HERE ? state.M
-      : fetch(`./${s.dir}/manifest.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null))));
-    const stale = meta.slots.filter((s, k) => stamps[k]?.generated !== s.generated).map((s) => s.dir);
-    if (here < 0 || meta.slots[here].n_points !== state.N || meta.slots.length < 2 || stale.length) {
-      console.warn(`history.json does not match the viewer data (${stale.join(', ') || HERE}) -- ` +
-                   'history off; rerun scripts/web_history.py');
-      return;
-    }
-    H.meta = meta;
-    H.here = here;
-    if (state.picked >= 0) renderHistory(state.picked);
-  } catch (err) {
-    console.warn(err);
-  }
-}
-
-function ensureHistory() {
-  if (!H.meta || H.slots || H.failed) return Promise.resolve();
-  H.loading ??= fetchData('history.bin', () => {}, './').then((buf) => {
-    const { meta } = H;
-    const blocks = unpack(buf, { blocks: meta.slots.flatMap((s) => s.blocks) });
-    const nCells = meta.lattice.nx * meta.lattice.ny;
-    H.slots = meta.slots.map((s) => {
-      const bits = blocks[`${s.dir}/valid`].data;
-      const cells = new Uint32Array(s.n_points);
-      let k = 0;
-      for (let c = 0; c < nCells; c++) if (bits[c >> 3] & (1 << (c & 7))) cells[k++] = c;
-      if (k !== s.n_points) throw new Error(`history.bin: ${s.dir} has ${k} cells, history.json says ${s.n_points}`);
-      const get = (name) => blocks[`${s.dir}/${name}`];
-      return { ...s, cells, mrt: get('mrt'), mrtLw: get('mrt_lw'), contrib: get('contrib'), glint: get('glint') };
-    });
-    updateSlotLinks();
-  }).catch((err) => { console.error(err); H.failed = true; });
-  return H.loading;
-}
-
-function rowOf(cells, c) {
-  let lo = 0, hi = cells.length - 1;
-  while (lo <= hi) {
-    const m = (lo + hi) >> 1, v = cells[m];
-    if (v === c) return m;
-    if (v < c) lo = m + 1; else hi = m - 1;
-  }
-  return -1;
-}
-
-/** Open the page on lattice cell `cell`: select it and bring the camera over it. */
-async function openCell(cell) {
-  if (!H.meta) return;
-  await ensureHistory();
-  if (!H.slots) return;
-  const i = rowOf(H.slots[H.here].cells, cell);
-  if (i < 0) {
-    $('hint').textContent = 'That place has no standpoint at this time (not flown, or no thermal coverage)';
-    return;
-  }
-  select(i);
-  const p = V.marker.position, { camera, controls } = V;
-  const dir = camera.position.clone().sub(controls.target).normalize();
-  controls.target.copy(p);
-  camera.position.copy(p).addScaledVector(dir, 220);
-  controls.update();
-}
-
-/** Local time of day in hours, from the slot's literal site time (see siteTime). */
-const hourOf = (iso) => {
-  const m = /[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(iso);
-  return m ? +m[1] + m[2] / 60 + (+m[3] || 0) / 3600 : NaN;
-};
-
-function renderHistory(i) {
-  const el = $('history');
-  if (!H.meta) { el.hidden = true; return; }
-  el.hidden = false;
-  const head = '<h3>Over the day</h3>';
-  if (!H.slots) {
-    el.innerHTML = `${head}<p class="note">${H.failed ? 'Could not load the other times.' : 'Loading the other times…'}</p>`;
-    ensureHistory().then(() => { if (state.picked === i) renderHistory(i); });
-    return;
-  }
-  const S = H.meta.sources, cell = H.slots[H.here].cells[i];
-  const times = H.slots.map((s) => {
-    const r = rowOf(s.cells, cell);
-    if (r < 0) return { s, r };
-    const src = Array.from({ length: s.contrib.cols }, (_, k) => s.contrib.at(r, k));
-    const glint = s.glint.at(r);
-    return { s, r, mrt: s.mrt.at(r), mrtLw: s.mrtLw.at(r), src, glint,
-             total: src.reduce((a, b) => a + b, 0) + glint, h: hourOf(s.when) };
-  });
-  const have = times.filter((t) => t.r >= 0);
-  const names = S.pretty, colors = S.colors, sky = S.sky;
-
-  // -- chart: MRT, its longwave part and the air, at each time this place was flown
-  const W = 352, Ht = 140, ml = 30, mr = 10, mt = 20, mb = 30;
-  const hs = times.map((t) => hourOf(t.s.when));
-  const x0 = Math.min(...hs) - 0.6, x1 = Math.max(...hs) + 0.6;
-  const vals = have.flatMap((t) => [t.mrt, t.mrtLw, t.s.conditions.t_atm_c]);
-  const y0 = Math.floor((Math.min(...vals) - 2) / 10) * 10, y1 = Math.ceil((Math.max(...vals) + 2) / 10) * 10;
-  const X = (h) => ml + (h - x0) / (x1 - x0) * (W - ml - mr);
-  const Y = (v) => mt + (1 - (v - y0) / (y1 - y0)) * (Ht - mt - mb);
-  let svg = '';
-  for (let v = y0; v <= y1; v += 10) {
-    svg += `<line class="grid" x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}"/>` +
-           `<text x="${ml - 4}" y="${Y(v) + 3}" text-anchor="end">${v}°</text>`;
-  }
-  times.forEach((t, k) => {
-    const x = X(hs[k]), cur = k === H.here, off = t.r < 0;
-    if (cur) svg += `<rect class="cur" x="${x - 17}" y="${mt - 8}" width="34" height="${Ht - mt - mb + 12}" rx="4"/>`;
-    const label = `<text class="${cur ? 'tcur' : off ? 'toff' : 'tlink'}" x="${x}" y="${Ht - mb + 15}" text-anchor="middle">${t.s.label}</text>` +
-      (off ? `<text class="toff" x="${x}" y="${Ht - mb + 26}" text-anchor="middle">not here</text>` : '');
-    svg += off || cur ? label : `<a href="${slotHref(t.s.dir, cell)}">${label}</a>`;
-  });
-  const path = (key) => have.map((t, k) => `${k ? 'L' : 'M'}${X(t.h).toFixed(1)},${Y(t[key]).toFixed(1)}`).join('');
-  if (have.length > 1) svg += `<path class="h-lw" d="${path('mrtLw')}"/><path class="h-mrt" d="${path('mrt')}"/>`;
-  for (const t of have) {
-    const x = X(t.h);
-    svg += `<rect class="h-air" x="${x - 3}" y="${Y(t.s.conditions.t_atm_c) - 3}" width="6" height="6"/>` +
-           `<circle class="h-lw-dot" cx="${x}" cy="${Y(t.mrtLw)}" r="3.5"/>` +
-           `<circle class="h-mrt-dot" cx="${x}" cy="${Y(t.mrt)}" r="4"/>` +
-           `<text class="h-val" x="${x}" y="${Y(t.mrt) - 8}" text-anchor="middle">${f1(t.mrt)}</text>`;
-  }
-  const chart = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="MRT at each time this place was flown">${svg}</svg>
-    <div class="h-legend"><span><i class="k-mrt"></i>MRT</span><span><i class="k-lw"></i>longwave only</span><span><i class="k-air"></i>air</span></div>`;
-
-  // -- sources: the same order in every row, so a colour stays in its place from one time to the next
-  const nSrc = names.length;
-  const peak = (k) => Math.max(...have.map((t) => t.src[k]));
-  const order = [...Array(nSrc).keys()].filter((k) => k !== sky).sort((a, b) => peak(b) - peak(a));
-  order.push(sky);
-  const maxTotal = Math.max(...have.map((t) => t.total), 1e-9);
-  const seg = (v, name, color) => (v > 0 ? `<i style="width:${(v / maxTotal * 100).toFixed(2)}%;background:${color}" title="${name} ${f0(v)} W/m²"></i>` : '');
-  const rows = have.map((t) => {
-    const cur = t.s.dir === HERE;
-    const inner = `<span class="t">${t.s.label}</span><span class="stack">${
-      order.map((k) => seg(t.src[k], names[k], colors[k])).join('')}${seg(t.glint, S.glint.pretty, S.glint.color)}</span>` +
-      `<span class="v">${f0(t.total)}</span>`;
-    return cur ? `<div class="hrow cur">${inner}</div>` : `<a class="hrow" href="${slotHref(t.s.dir, cell)}">${inner}</a>`;
-  }).join('');
-
-  // -- the largest sources (sky aside), as numbers, with each time's largest in bold
-  const top = order.filter((k) => k !== sky && peak(k) >= 1).slice(0, 6);
-  const glintPeak = Math.max(...have.map((t) => t.glint));
-  const largest = have.map((t) => order.filter((k) => k !== sky).reduce((a, b) => (t.src[b] > t.src[a] ? b : a)));
-  const cellRow = (name, color, vs, boldAt) => `<tr><td><span class="sw" style="background:${color}"></span>${name}</td>${
-    vs.map((v, j) => `<td>${boldAt?.[j] ? `<b>${f0(v)}</b>` : f0(v)}</td>`).join('')}</tr>`;
-  const table = `<table class="htab"><thead><tr><th>W/m²</th>${have.map((t) =>
-      `<th${t.s.dir === HERE ? ' class="cur"' : ''}>${t.s.label}</th>`).join('')}</tr></thead><tbody>${
-    top.map((k) => cellRow(names[k], colors[k], have.map((t) => t.src[k]), largest.map((b) => b === k))).join('')}${
-    glintPeak >= 0.5 ? cellRow(S.glint.pretty, S.glint.color, have.map((t) => t.glint)) : ''}${
-    cellRow(names[sky], colors[sky], have.map((t) => t.src[sky]))}${
-    `<tr class="sum"><td>Absorbed, S<sub>str</sub></td>${have.map((t) => `<td>${f0(t.total)}</td>`).join('')}</tr>`}</tbody></table>`;
-
-  // -- one sentence on whether the largest source changes with the sun
-  const lname = (k) => names[k];
-  let verdict;
-  if (have.length < 2) verdict = 'This place was flown only at this time.';
-  else if (largest.every((k) => k === largest[0])) verdict = `Largest source at every time: <b>${lname(largest[0])}</b>.`;
-  else verdict = `Largest source: ${have.map((t, j) => `<b>${lname(largest[j])}</b> at ${t.s.label}`).join(', ')}.`;
-  if (have.length >= 2) {
-    const a = have[0], b = have[have.length - 1];
-    const ranked = [...Array(nSrc).keys()].filter((k) => k !== sky)
-      .map((k) => [k, b.src[k] - a.src[k]]).sort((p, q) => q[1] - p[1]);
-    const floor = Math.max(2, 0.1 * (ranked[0]?.[1] ?? 0));          // leave out the trivial ones
-    const rise = ranked.slice(0, 3).filter(([, d]) => d >= floor);
-    if (rise.length) verdict += ` From ${a.s.label} to ${b.s.label}, the most added: ${
-      rise.map(([k, d]) => `${lname(k)} +${f0(d)}`).join(', ')} W/m².`;
-  }
-
-  el.innerHTML = `${head}${chart}
-    <p class="note">What the body absorbs, by source: S<sub>str</sub> = ${state.M.body.eps_p.toFixed(2)} × longwave +
-      ${state.M.body.alpha_sw.toFixed(2)} × shortwave (VDI 3787, ISO 7726; the Combined budget below). Bar length = total;
-      a time links to its own page.</p>
-    <div class="hbars">${rows}</div>${table}
-    <p class="verdict">${verdict}</p>
-    <p class="note">Each time is its own flight: the surfaces' longwave was measured then, the sunlight computed for
-      that instant.${H.slots.some((s, k) => k !== H.here && times[k].r < 0) ? ' “Not here”: that flight did not cover this place, or left it without thermal coverage.' : ''}</p>`;
+  if (location.hash === '#debug') window.urfDebug = { state, V, select };   // headless tests only
 }
 
 /* Where each standpoint's glint comes from (scripts/glint_sources.py): per standpoint row, the
@@ -1043,8 +824,6 @@ function select(i) {
   $('panel').classList.remove('empty');
   $('panel-body').hidden = false;
   renderPanel();
-  renderHistory(i);
-  updateSlotLinks();
   renderGlintRays(i);
   // Phone: the budget is behind a drawer, so a tap on the surface brings it up.
   if (drawersActive()) openDrawer('panel');
@@ -1058,9 +837,8 @@ function select(i) {
  *  body-weighted contributions, because each ray was folded in as w_r * value_r. */
 function levelRows(i, band) {
   const { M, B } = state;
-  // Combined = what the body absorbs, S_str = a_l * longwave + a_k * shortwave (VDI 3787, ISO 7726).
-  const aL = M.body.eps_p, aK = M.body.alpha_sw;
-  const mix = (lw, sw) => (band === 'lw' ? lw : band === 'sw' ? sw : aL * lw + aK * sw);
+  const lwc = M.body.lw_coeff, swc = M.body.sw_coeff;
+  const mix = (lw, sw) => (band === 'lw' ? lw : band === 'sw' ? sw : lwc * lw + swc * sw);
 
   const L1 = M.levels.l1, L2 = M.levels.l2, L3 = M.levels.l3;
 
@@ -1077,7 +855,7 @@ function levelRows(i, band) {
   // F_i stays in MRT and is still shown on each row; it is only out of the bar length.
   const planeOf = (k) => {
     const lw = B.l1_lw.at(i, k), sw = B.l1_sw.at(i, k);
-    return band === 'lw' ? lw : band === 'sw' ? sw : aL * lw + aK * sw;
+    return band === 'lw' ? lw : band === 'sw' ? sw : lwc * lw + swc * sw;
   };
   const l1 = dirOrder.map((k) => {
     const fi = L1.factors[k];
@@ -1128,15 +906,13 @@ function renderPanel() {
   const i = state.picked;
   if (i < 0) return;
   const { M, B, band } = state;
-  const aL = M.body.eps_p, aK = M.body.alpha_sw;
+  const swc = M.body.sw_coeff;
 
   const mrt = B.mrt_combined.at(i), mrtLw = B.mrt_longwave.at(i);
   const eLw = B.e_lw.at(i), eSwD = B.e_sw_diffuse.at(i);
   const direct = B.e_sw_direct.at(i), spec = B.e_sw_specular.at(i);
   const swAll = eSwD + direct + spec;
-  // S_str, the radiation the body absorbs: T_mrt = (S_str / (eps_p sigma))^(1/4). Because a_l = eps_p, this is
-  // the same MRT as (sum F_i L_i + (a_k / eps_p) sum F_i K_i) / sigma, the form the pipeline stores.
-  const flux = aL * eLw + aK * swAll;
+  const flux = eLw + swc * swAll;
 
   $('mrt-value').textContent = (mrt < 0 ? '−' : '') + Math.abs(mrt).toFixed(2);
 
@@ -1164,7 +940,7 @@ function renderPanel() {
     <dt>Direct sun on body</dt><dd${zero(direct)}>${f1(direct)} W/m²</dd>
     <dt>Specular glint</dt><dd${zero(spec)}>${spec > 0 && spec < 1 ? spec.toFixed(2) : f1(spec)} W/m²</dd>
     ${glintFrom}
-    <dt>Absorbed, S<sub>str</sub></dt><dd>${f1(flux)} W/m²</dd>
+    <dt>Absorbed flux</dt><dd>${f1(flux)} W/m²</dd>
     <div class="sep"></div>
     <dt>Position (E, N)</dt><dd>${east.toFixed(1)}, ${north.toFixed(1)} m</dd>
     <dt>Ground, above scene low</dt><dd>${(up - state.groundMin).toFixed(1)} m</dd>
@@ -1191,20 +967,13 @@ function renderPanel() {
         </div>
       </div>`).join('');
     const caption = irradiance
-      ? (band === 'comb' ? `Absorbed on each body face, a_l·L + a_k·K, before F_i`
-                         : `Received by each body face · what a sensor facing that way reads`)
-      : `${band === 'comb' ? 'Absorbed (S_str)' : bandName} total ${f1(total)} ${unit} · shares of that total`;
+      ? `Received by each body face · what a sensor facing that way reads`
+      : `${bandName} total ${f1(total)} ${unit} · shares of that total`;
     return `<section class="level"><h3>${title}</h3>
       <p class="total">${caption}</p>
       ${bars}</section>`;
   }).join('');
 
-  $('formula').innerHTML =
-    `MRT as VDI 3787 / ISO 7726, standing person: S<sub>str</sub> = a<sub>k</sub> Σ F<sub>i</sub> K<sub>i</sub> ` +
-    `+ a<sub>l</sub> Σ F<sub>i</sub> L<sub>i</sub>, T<sub>mrt</sub> = (S<sub>str</sub> / (ε<sub>p</sub> σ))<sup>1/4</sup> − 273.15, ` +
-    `with a<sub>k</sub> ${aK.toFixed(2)}, a<sub>l</sub> = ε<sub>p</sub> ${aL.toFixed(2)}, F<sub>i</sub> 0.22 sideways and 0.06 up and ` +
-    `down; K<sub>i</sub> includes the direct sun and glints through f<sub>p</sub>. "Combined" shows S<sub>str</sub>. ` +
-    `${f1(flux)} W/m² here gives ${mrt.toFixed(2)} °C.`;
   $('closure').textContent =
     `Element and Material are exact splits of the same budget: each sums back to the ` +
     `${bandName.toLowerCase()} total above. Direction shows what arrives on each plane ` +
@@ -1369,7 +1138,6 @@ function buildChrome() {
       state.picked = -1;
       V.marker.visible = false;
       renderGlintRays(-1);
-      updateSlotLinks();
       $('panel').classList.add('empty');
       $('panel-body').hidden = true;
     }
