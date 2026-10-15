@@ -270,6 +270,11 @@ async function loadGlints() {
       console.warn(`glints.json is for ${meta.n_points} standpoints, the surface has ${state.N} -- ignored`);
       return;
     }
+    // A slot can legitimately have none: at 06:24 the sun is 2.9 deg up, DNI 0, so nothing glints.
+    // Test the ENERGY, not the count -- that pass still returns ~1,000 sources, every one carrying
+    // 0 W/m2, and offering a checkbox that turns on a cloud delivering nothing would be a lie.
+    const strongest = Array.isArray(meta.src_total_range) ? meta.src_total_range[1] : 0;
+    if (!meta.n_sources || !(strongest > 0)) { $('n-glint').textContent = 'none'; return; }
     const G = unpack(await fetchData('glints.bin'), meta);
     const p = G.src_pos.data, n = meta.n_sources;
     const pos = new Float32Array(n * 3);
@@ -1113,6 +1118,9 @@ function buildChrome() {
     `Sun ${f1(c.sun_elevation_deg)}° high, azimuth ${f0(c.sun_azimuth_deg)}°<br>` +
     `Global ${f0(c.ghi)} W/m² (direct ${f0(c.dni)}, diffuse ${f0(c.dhi)})`;
   $('conds-src').textContent = c.air_source ? `Weather: ${c.air_source}` : '';
+  // A slot flown in two parts maps only the part belonging to this instant; say so, or the
+  // missing half of the surface reads as a bug (manifest conditions.coverage, block.toml [web] note).
+  $('conds-note').textContent = c.coverage || '';
   $('conditions').textContent =
     `One instant: ${c.note}. Sun ${c.sun_elevation_deg.toFixed(1)}° above the horizon, ` +
     `DNI ${f0(c.dni)} / DHI ${f0(c.dhi)} W/m², sky downwelling longwave ` +
