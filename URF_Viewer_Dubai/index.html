@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="./style.css">
 <script data-goatcounter="https://matzefit.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
+
 <script type="importmap">
 {
   "imports": {
@@ -124,6 +125,9 @@
         <dl id="readout-grid"></dl>
       </header>
 
+      <!-- The same place at the other times it was flown (web/history.json); hidden without one. -->
+      <section id="history" hidden></section>
+
       <nav id="bands" role="tablist">
         <button type="button" data-band="comb" class="on" role="tab">Combined</button>
         <button type="button" data-band="lw" role="tab">Longwave</button>
@@ -133,6 +137,7 @@
       <div id="levels"></div>
 
       <footer id="panel-foot">
+        <p id="formula"></p>
         <p id="closure"></p>
         <p id="conditions"></p>
       </footer>
