@@ -1,4 +1,4 @@
-/* Urban Radiation Field -- MRT viewer.
+/* Thermal Clouds -- MRT viewer.
  *
  * Static assets, no backend:
  *   cloud.bin        the dense reconstruction, 1 row per point: position, RGB, material,
@@ -373,11 +373,12 @@ const hourOf = (iso) => {
 
 function renderHistory(i) {
   const el = $('history');
-  if (!H.meta) { el.hidden = true; return; }
-  el.hidden = false;
-  const head = '<h3>Over the day</h3>';
+  if (!H.meta) { $('fold-history').hidden = true; return; }
+  $('fold-history').hidden = false;
+  const head = '';
   if (!H.slots) {
-    el.innerHTML = `${head}<p class="note">${H.failed ? 'Could not load the other times.' : 'Loading the other times…'}</p>`;
+    $('sum-history').textContent = '';
+    el.innerHTML = `<p class="note">${H.failed ? 'Could not load the other times.' : 'Loading the other times…'}</p>`;
     ensureHistory().then(() => { if (state.picked === i) renderHistory(i); });
     return;
   }
@@ -469,9 +470,11 @@ function renderHistory(i) {
       rise.map(([k, d]) => `${lname(k)} +${f0(d)}`).join(', ')} W/m².`;
   }
 
+  $('sum-history').textContent = have.length > 1
+    ? have.map((t) => `${t.s.label} ${f1(t.mrt)}`).join(' · ') + ' °C' : 'only this time';
   el.innerHTML = `${head}${chart}
     <p class="note">What the body absorbs, by source: S<sub>str</sub> = ${state.M.body.eps_p.toFixed(2)} × longwave +
-      ${state.M.body.alpha_sw.toFixed(2)} × shortwave (VDI 3787, ISO 7726; the Combined budget below). Bar length = total;
+      ${state.M.body.alpha_sw.toFixed(2)} × shortwave (VDI 3787, ISO 7726; the Combined budget). Bar length = total;
       a time links to its own page.</p>
     <div class="hbars">${rows}</div>${table}
     <p class="verdict">${verdict}</p>
@@ -565,16 +568,17 @@ function renderComfort(i) {
   const s = CF.slot;
   let html = `<div class="urow"><span class="ulab">UTCI</span>${badge(r.utci0)}</div>`;
   if (r.changed) {
-    html += `<div class="whatif"><div class="wtitle">Without ${offNames.join(', ')}
-        <button type="button" id="all-on">all on</button></div>
+    const dU = Number.isFinite(r.utci1) && Number.isFinite(r.utci0) ? r.utci0 - r.utci1 : NaN;
+    html += `<div class="whatif"><div class="wtitle"><span>Replaced by a neutral surface at air temperature:
+        ${offNames.join(', ')}</span><button type="button" id="all-on">all on</button></div>
       <div class="wrow"><span>MRT</span><b>${f1(r.mrt1)} °C</b><em>${signed(r.mrt1 - r.mrt0, 1)} K</em></div>
-      <div class="wrow"><span>UTCI</span>${badge(r.utci1)}${Number.isFinite(r.utci1) && Number.isFinite(r.utci0)
-        ? `<em>${signed(r.utci1 - r.utci0, 1)} K</em>` : ''}</div>
+      <div class="wrow"><span>UTCI</span>${badge(r.utci1)}${Number.isFinite(dU) ? `<em>${signed(-dU, 1)} K</em>` : ''}</div>
+      <p class="wlabel">Added above a neutral surface at air temperature: <b>${signed(r.mrt0 - r.mrt1, 1)} K</b> of MRT${
+        Number.isFinite(dU) ? `, <b>${signed(dU, 1)} K</b> of UTCI` : ''}.</p>
       ${r.unknown ? '<p class="wnote">Loading what each material fills of the view…</p>' : ''}</div>`;
   }
-  html += `<p class="unote">UTCI from this MRT with air ${f1(s.t_air_c)} °C, RH ${f0(s.rh_pct)} %, wind ${f1(s.wind_10m_m_s)} m/s at
-    10 m (${s.wind_source}), all fixed for this time. Untick a material below to replace it by a surface at air
-    temperature that reflects no sunlight; its shade stays.</p>`;
+  html += `<p class="unote">UTCI with air ${f1(s.t_air_c)} °C, RH ${f0(s.rh_pct)} %, wind ${f1(s.wind_10m_m_s)} m/s at
+    10 m (${s.wind_source}), all fixed for this time; only MRT varies.</p>`;
   el.innerHTML = html;
   $('all-on')?.addEventListener('click', () => { state.off.clear(); renderPanel(); });
   if (r.unknown) ensureHistory().then(ensureComfort).then(() => { if (state.picked === i) renderComfort(i); });
@@ -1318,7 +1322,7 @@ function renderPanel() {
   const unit = 'W/m²';
   const bandName = { comb: 'Combined', lw: 'Longwave', sw: 'Shortwave' }[band];
 
-  $('levels').innerHTML = levelRows(i, band).map(({ title, rows, extras, irradiance }) => {
+  const levelHtml = ({ title, rows, extras, irradiance }, inFold) => {
     const all = rows.concat(extras);
     const max = Math.max(...all.map((r) => r.value), 1e-9);
     const switchable = title === M.levels.l3.name && CF.slot;     // the Material level carries the switches
@@ -1345,10 +1349,24 @@ function renderPanel() {
       ? (band === 'comb' ? `Absorbed on each body face, a_l·L + a_k·K, before F_i`
                          : `Received by each body face · what a sensor facing that way reads`)
       : `${band === 'comb' ? 'Absorbed (S_str)' : bandName} total ${f1(total)} ${unit} · shares of that total`;
-    return `<section class="level"><h3>${title}</h3>
-      <p class="total">${caption}</p>
+    const lead = switchable
+      ? `<p class="switch-label">Untick a source: it is replaced by a neutral surface at air temperature (a black body
+          at the air's temperature that reflects no sunlight; its shade stays). The box above then shows what it adds
+          above that surface.</p>` : '';
+    return `<section class="level">${inFold ? '' : `<h3>${title}</h3>`}
+      <p class="total">${caption}</p>${lead}
       ${bars}</section>`;
-  }).join('');
+  };
+  const [l1, l2, l3] = levelRows(i, band);
+  $('levels-material').innerHTML = levelHtml(l3, true);
+  $('levels').innerHTML = levelHtml(l1, false) + levelHtml(l2, false);
+  // one line in each fold's header, so a closed section still says something
+  const top = (lv) => lv.rows.concat(lv.extras).filter((r) => r.name !== (M.levels.l3.pretty ?? M.levels.l3.labels).at(-1)
+    && r.name !== 'Sky').sort((a, b) => b.value - a.value)[0];
+  const t3 = top(l3), t2 = top(l2);
+  $('sum-material').textContent = t3 ? `${t3.name} ${pct(t3.value / total * 100)}` : '';
+  $('sum-levels').textContent = t2 ? `${t2.name} ${pct(t2.value / total * 100)}` : '';
+  $('sum-details').textContent = `S_str ${f0(flux)} W/m² · sun ${B.sunlit.at(i) ? 'yes' : 'no'}`;
 
   $('formula').innerHTML =
     `MRT as VDI 3787 / ISO 7726, standing person: S<sub>str</sub> = a<sub>k</sub> Σ F<sub>i</sub> K<sub>i</sub> ` +
@@ -1485,8 +1503,22 @@ function buildChrome() {
 
   $('reset').addEventListener('click', resetView);
 
+  // Folds: open or closed as the visitor left them. Storage can be refused (private windows, blocked site
+  // data), so every read and write is guarded and the defaults in index.html apply without it.
+  const FOLD_KEY = 'thermal-clouds-folds';
+  let folds = {};
+  try { folds = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}') || {}; } catch { folds = {}; }
+  for (const d of document.querySelectorAll('details.fold')) {
+    if (d.id in folds) d.open = !!folds[d.id];
+  }
+  $('panel-body').addEventListener('toggle', (e) => {        // toggle does not bubble: listen in the capture phase
+    if (!e.target.matches?.('details.fold')) return;
+    folds[e.target.id] = e.target.open;
+    try { localStorage.setItem(FOLD_KEY, JSON.stringify(folds)); } catch { /* storage refused: fine */ }
+  }, true);
+
   // The material switch: a change re-renders the panel with the source replaced (renderComfort).
-  $('levels').addEventListener('change', (e) => {
+  $('levels-material').addEventListener('change', (e) => {
     const t = e.target;
     if (!t.classList?.contains('src-toggle')) return;
     if (t.checked) state.off.delete(t.dataset.key); else state.off.add(t.dataset.key);

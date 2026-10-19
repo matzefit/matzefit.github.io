@@ -1,4 +1,4 @@
-/* Urban Radiation Field MRT viewer.
+/* Thermal Clouds MRT viewer.
    Dark chrome around a dark 3D stage: the point cloud and the inferno MRT surface both read
    best against it, and it keeps the UI from competing with the data. Three columns --
    scene controls left, stage centre, the selected standpoint's budget right. */
@@ -216,6 +216,34 @@ input[type=range]::-moz-range-thumb {
 #readout-grid .sep { grid-column: 1 / -1; height: 1px; background: var(--line); margin: 6px 0; }
 #readout-grid dd.zero { color: var(--faint); }
 
+/* ---------- foldable panel sections (index.html details.fold) ---------- */
+
+details.fold { border-bottom: 1px solid var(--line); }
+details.fold > summary {
+  display: flex; align-items: baseline; gap: 10px; padding: 12px 20px; cursor: pointer; list-style: none;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+}
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before {
+  content: ""; flex: 0 0 auto; width: 0; height: 0; align-self: center;
+  border-left: 5px solid var(--muted); border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  transition: transform .15s;
+}
+details.fold[open] > summary::before { transform: rotate(90deg); }
+details.fold > summary:hover { color: var(--text); }
+details.fold > summary .ft { flex: 0 0 auto; }
+details.fold > summary .fs {
+  flex: 1; min-width: 0; text-align: right; text-transform: none; letter-spacing: 0; font-weight: 400;
+  font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+details.fold > #levels, details.fold > #levels-material { padding: 0 20px 4px; }
+details.fold > #history { padding: 0 20px 10px; border-bottom: none; }
+details.fold > #readout-grid { margin: 0 20px 14px; }
+.switch-label { margin: -4px 0 10px; font-size: 11px; font-weight: 400; color: var(--faint); line-height: 1.45; }
+#comfort .wlabel { margin: 7px 0 0; font-size: 11.5px; color: var(--muted); }
+#comfort .wlabel b { color: var(--text); }
+
 /* ---------- UTCI and the material switch (app.js renderComfort) ---------- */
 
 #comfort { margin-top: 10px; }
@@ -232,6 +260,7 @@ input[type=range]::-moz-range-thumb {
 }
 #comfort .wtitle { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--muted); }
 #comfort .wtitle button {
+  white-space: nowrap; flex: 0 0 auto;
   font: inherit; font-size: 11px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0;
 }
 #comfort .wrow { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
