@@ -1,0 +1,344 @@
+{
+ "format": "urf-history/1",
+ "bin": "history.bin",
+ "lattice": {
+  "nx": 1023,
+  "ny": 825,
+  "x0": -1488.17822265625,
+  "y0": -851.044921875,
+  "spacing": 2.0,
+  "order": "ij"
+ },
+ "sources": {
+  "labels": [
+   "glass",
+   "aluminium_cladding",
+   "concrete",
+   "stone_paving",
+   "asphalt_road",
+   "vegetation",
+   "grass",
+   "water",
+   "sand",
+   "vehicle",
+   "flat_roof",
+   "plaster_stucco",
+   "unclassified",
+   "sky",
+   "direct_sun"
+  ],
+  "pretty": [
+   "Glass",
+   "Aluminium cladding",
+   "Concrete",
+   "Paving (red)",
+   "Asphalt / grey paving",
+   "Trees",
+   "Grass",
+   "Water",
+   "Sand",
+   "Vehicle",
+   "Flat roof",
+   "Plaster/render",
+   "Unclassified",
+   "Sky",
+   "Direct sun on body"
+  ],
+  "colors": [
+   "#53b4e0",
+   "#99a5b1",
+   "#bdb8ab",
+   "#c7c2b2",
+   "#4a4a52",
+   "#458b4d",
+   "#8dbf64",
+   "#3b7eb3",
+   "#e0c99c",
+   "#d55e00",
+   "#66666f",
+   "#f2e4bd",
+   "#d9d9d9",
+   "#87bff0",
+   "#f5b26c"
+  ],
+  "sky": 13,
+  "glint": {
+   "label": "glint",
+   "pretty": "Specular glint",
+   "color": "#ffd23f"
+  }
+ },
+ "flux": "S_str = a_l x longwave + a_k x shortwave (VDI 3787, ISO 7726), absorbed by the standing body, W/m2",
+ "cells_by_times": {
+  "1": 24087,
+  "2": 13941,
+  "3": 214023,
+  "4": 12380
+ },
+ "slots": [
+  {
+   "dir": "data_0600",
+   "label": "06:24",
+   "when": "2026-09-24T06:24:05+04:00",
+   "n_points": 141010,
+   "generated": "2026-09-29T16:22:46.682686+00:00",
+   "blocks": [
+    {
+     "name": "data_0600/valid",
+     "dtype": "uint8",
+     "offset": 0,
+     "length": 105497,
+     "cols": 1,
+     "scale": null,
+     "note": "strided-lattice cells of this slot, packed bits, ij order (x major)"
+    },
+    {
+     "name": "data_0600/mrt",
+     "dtype": "int16",
+     "offset": 105497,
+     "length": 282020,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, combined"
+    },
+    {
+     "name": "data_0600/mrt_lw",
+     "dtype": "int16",
+     "offset": 387517,
+     "length": 282020,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, longwave only"
+    },
+    {
+     "name": "data_0600/contrib",
+     "dtype": "uint16",
+     "offset": 669537,
+     "length": 4230300,
+     "cols": 15,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed), order sources.labels"
+    },
+    {
+     "name": "data_0600/glint",
+     "dtype": "uint16",
+     "offset": 4899837,
+     "length": 282020,
+     "cols": 1,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed) from the glint"
+    }
+   ],
+   "conditions": {
+    "when": "2026-09-24 06:24:05+04:00",
+    "t_atm_c": 29.1,
+    "rh_pct": 77.5,
+    "sun_elevation_deg": 2.9134029978684866,
+    "sun_azimuth_deg": 91.72483261183987,
+    "ghi": 11.0,
+    "dni": 0.0,
+    "dhi": 11.0,
+    "coverage": "This early slot maps The Greens only. Barsha Heights was flown two hours later, with the sun far higher, and is mapped as its own instant."
+   },
+   "sources_close_w_m2": 0.0267
+  },
+  {
+   "dir": "data_0800",
+   "label": "08:07",
+   "when": "2026-09-24T08:07:02+04:00",
+   "n_points": 107169,
+   "generated": "2026-09-29T17:55:38.534360+00:00",
+   "blocks": [
+    {
+     "name": "data_0800/valid",
+     "dtype": "uint8",
+     "offset": 5181857,
+     "length": 105497,
+     "cols": 1,
+     "scale": null,
+     "note": "strided-lattice cells of this slot, packed bits, ij order (x major)"
+    },
+    {
+     "name": "data_0800/mrt",
+     "dtype": "int16",
+     "offset": 5287354,
+     "length": 214338,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, combined"
+    },
+    {
+     "name": "data_0800/mrt_lw",
+     "dtype": "int16",
+     "offset": 5501692,
+     "length": 214338,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, longwave only"
+    },
+    {
+     "name": "data_0800/contrib",
+     "dtype": "uint16",
+     "offset": 5716030,
+     "length": 3215070,
+     "cols": 15,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed), order sources.labels"
+    },
+    {
+     "name": "data_0800/glint",
+     "dtype": "uint16",
+     "offset": 8931100,
+     "length": 214338,
+     "cols": 1,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed) from the glint"
+    }
+   ],
+   "conditions": {
+    "when": "2026-09-24 08:07:02+04:00",
+    "t_atm_c": 32.1,
+    "rh_pct": 61.1,
+    "sun_elevation_deg": 25.769457911282593,
+    "sun_azimuth_deg": 103.61939063389207,
+    "ghi": 280.0,
+    "dni": 186.23498699261322,
+    "dhi": 199.03413200865782,
+    "coverage": "This slot maps Barsha Heights South, flown at 08:00. The Greens were flown two hours earlier, just after sunrise, and are mapped as their own instant."
+   },
+   "sources_close_w_m2": 0.0298
+  },
+  {
+   "dir": "data_1100",
+   "label": "10:59",
+   "when": "2026-09-24T10:59:41+04:00",
+   "n_points": 246523,
+   "generated": "2026-09-29T14:02:58.797120+00:00",
+   "blocks": [
+    {
+     "name": "data_1100/valid",
+     "dtype": "uint8",
+     "offset": 9145438,
+     "length": 105497,
+     "cols": 1,
+     "scale": null,
+     "note": "strided-lattice cells of this slot, packed bits, ij order (x major)"
+    },
+    {
+     "name": "data_1100/mrt",
+     "dtype": "int16",
+     "offset": 9250935,
+     "length": 493046,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, combined"
+    },
+    {
+     "name": "data_1100/mrt_lw",
+     "dtype": "int16",
+     "offset": 9743981,
+     "length": 493046,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, longwave only"
+    },
+    {
+     "name": "data_1100/contrib",
+     "dtype": "uint16",
+     "offset": 10237027,
+     "length": 7395690,
+     "cols": 15,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed), order sources.labels"
+    },
+    {
+     "name": "data_1100/glint",
+     "dtype": "uint16",
+     "offset": 17632717,
+     "length": 493046,
+     "cols": 1,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed) from the glint"
+    }
+   ],
+   "conditions": {
+    "when": "2026-09-24 10:59:41+04:00",
+    "t_atm_c": 38.9,
+    "rh_pct": 40.6,
+    "sun_elevation_deg": 59.08928924871957,
+    "sun_azimuth_deg": 143.19247837057497,
+    "ghi": 828.0,
+    "dni": 745.350273535276,
+    "dhi": 188.51265284006635,
+    "coverage": null
+   },
+   "sources_close_w_m2": 0.0383
+  },
+  {
+   "dir": "data",
+   "label": "13:32",
+   "when": "2026-09-24T13:32:50+04:00",
+   "n_points": 248856,
+   "generated": "2026-09-29T13:57:03.803134+00:00",
+   "blocks": [
+    {
+     "name": "data/valid",
+     "dtype": "uint8",
+     "offset": 18125763,
+     "length": 105497,
+     "cols": 1,
+     "scale": null,
+     "note": "strided-lattice cells of this slot, packed bits, ij order (x major)"
+    },
+    {
+     "name": "data/mrt",
+     "dtype": "int16",
+     "offset": 18231260,
+     "length": 497712,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, combined"
+    },
+    {
+     "name": "data/mrt_lw",
+     "dtype": "int16",
+     "offset": 18728972,
+     "length": 497712,
+     "cols": 1,
+     "scale": 0.01,
+     "note": "degC, longwave only"
+    },
+    {
+     "name": "data/contrib",
+     "dtype": "uint16",
+     "offset": 19226684,
+     "length": 7465680,
+     "cols": 15,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed), order sources.labels"
+    },
+    {
+     "name": "data/glint",
+     "dtype": "uint16",
+     "offset": 26692364,
+     "length": 497712,
+     "cols": 1,
+     "scale": 0.05,
+     "note": "W/m2 share of S_str (absorbed) from the glint"
+    }
+   ],
+   "conditions": {
+    "when": "2026-09-24 13:32:50+04:00",
+    "t_atm_c": 36.9,
+    "rh_pct": 45.0,
+    "sun_elevation_deg": 57.676053837272946,
+    "sun_azimuth_deg": 220.59179230017162,
+    "ghi": 896.0,
+    "dni": 884.3621212600656,
+    "dhi": 148.68001927483738,
+    "coverage": null
+   },
+   "sources_close_w_m2": 0.0347
+  }
+ ]
+}

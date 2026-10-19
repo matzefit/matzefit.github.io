@@ -1,0 +1,85 @@
+{
+ "format": "urf-comfort/1",
+ "bin": "comfort.bin",
+ "n_places": 264431,
+ "labels": [
+  "glass",
+  "aluminium_cladding",
+  "concrete",
+  "stone_paving",
+  "asphalt_road",
+  "vegetation",
+  "grass",
+  "water",
+  "sand",
+  "vehicle",
+  "flat_roof",
+  "plaster_stucco",
+  "unclassified",
+  "sky"
+ ],
+ "blocks": [
+  {
+   "name": "valid",
+   "dtype": "uint8",
+   "offset": 0,
+   "length": 105497,
+   "cols": 1,
+   "scale": null,
+   "note": "places with a W row: the union of the slots' cells on history.json's lattice, packed bits"
+  },
+  {
+   "name": "w",
+   "dtype": "uint16",
+   "offset": 105497,
+   "length": 7404068,
+   "cols": 14,
+   "scale": 1.5259021896696422e-05,
+   "note": "view weight of each material at the place (rays' standing-person weights), order labels"
+  }
+ ],
+ "lattice": {
+  "nx": 1023,
+  "ny": 825,
+  "x0": -1488.17822265625,
+  "y0": -851.044921875,
+  "spacing": 2.0,
+  "order": "ij"
+ },
+ "reference": "a surface at air temperature that reflects no sunlight (MRT = air temperature with every source off)",
+ "checked": "rays reproduce the stored 13:00 l3_lw at 248,856 places to 0.0049 W/m2",
+ "slots": [
+  {
+   "dir": "data_0600",
+   "label": "06:24",
+   "t_air_c": 29.1,
+   "rh_pct": 77.5,
+   "wind_10m_m_s": 2.25,
+   "wind_source": "NCM Jumeirah station"
+  },
+  {
+   "dir": "data_0800",
+   "label": "08:07",
+   "t_air_c": 32.1,
+   "rh_pct": 61.1,
+   "wind_10m_m_s": 1.08,
+   "wind_source": "NCM Jumeirah station"
+  },
+  {
+   "dir": "data_1100",
+   "label": "10:59",
+   "t_air_c": 38.9,
+   "rh_pct": 40.6,
+   "wind_10m_m_s": 2.39,
+   "wind_source": "NCM Jumeirah station"
+  },
+  {
+   "dir": "data",
+   "label": "13:32",
+   "t_air_c": 36.9,
+   "rh_pct": 45.0,
+   "wind_10m_m_s": 4.38,
+   "wind_source": "NCM Jumeirah station"
+  }
+ ]
+}
