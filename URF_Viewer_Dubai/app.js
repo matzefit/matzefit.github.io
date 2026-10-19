@@ -23,6 +23,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { COLORMAPS } from './colormaps.js';
+import { utci, utciCategory, UTCI_CATEGORIES } from './utci.js';
 
 // Time slots: every slot's data sit in their own folder (the reference slot in data/, others in
 // data_<hhmm>/), listed in slots.json; ?slot=<hhmm> picks one. Only digits pass, so the query
@@ -231,6 +232,7 @@ const state = {
   M: null, B: null, N: 0, C: null, CB: null,
   band: 'comb', field: null, picked: -1, fields: [],
   matOn: null, elemOn: null, cloudMode: 0, cloudRamp: 'inferno',
+  off: new Set(),          // sources switched off in the panel: 'm:<material index>', 'direct', 'glint'
 };
 
 init().catch((err) => {
@@ -249,6 +251,7 @@ async function init() {
     fetch(`${DATA}manifest.json`).then((r) => r.json()),
     fetch(`${DATA}scene.json`).then((r) => r.json()),
     fetch(`${DATA}cloud.json`).then((r) => r.json()),
+    loadComfortMeta(),
   ]);
   state.M = manifest;
   state.N = manifest.n_points;
@@ -277,7 +280,7 @@ async function init() {
 
   loadCloud(cloudMeta);   // not awaited: the view is already interactive
   loadGlints();           // likewise; optional (older builds have no glints.json)
-  if (location.hash === '#debug') window.urfDebug = { state, V, H, select };   // headless tests only
+  if (location.hash === '#debug') window.urfDebug = { state, V, H, CF, select };   // headless tests only
   await loadHistoryMeta();
   if (CELL >= 0) openCell(CELL);   // arrived from another time's link: same place, this time
 }
@@ -476,6 +479,107 @@ function renderHistory(i) {
       that instant.${H.slots.some((s, k) => k !== H.here && times[k].r < 0) ? ' “Not here”: that flight did not cover this place, or left it without thermal coverage.' : ''}</p>`;
 }
 
+/* ------------------------------------------------- switching sources off, and UTCI */
+
+/* scripts/web_comfort.py -> web/comfort.json (8 kB: each slot's air, humidity and 10 m wind for UTCI) and
+ * comfort.bin (each place's view weight per material, fetched with the first pick). Switching a source off
+ * replaces what it sends the body by what a surface at air temperature that reflects no sunlight would send:
+ *   S_str' = S_str - (a_l l3_lw_k + a_k l3_sw_k) + a_l W_k sigma T_air^4,
+ * W_k the share of the standing body's view the material fills. The surface stays where it is, so its shade
+ * stays too; only what it emits and reflects changes. Direct sun and glint off: as if the body were shaded from
+ * them. Every source off gives MRT = air temperature. */
+const CF = { meta: null, slot: null, cells: null, W: null, loading: null, failed: false };
+
+async function loadComfortMeta() {
+  try {
+    const res = await fetch('./comfort.json', { cache: 'no-cache' });
+    if (!res.ok) return;
+    const meta = await res.json();
+    CF.meta = meta;
+    CF.slot = meta.slots.find((s) => s.dir === HERE) ?? null;
+  } catch (err) {
+    console.warn(err);
+  }
+}
+
+function ensureComfort() {
+  if (!CF.meta || CF.W || CF.failed) return Promise.resolve();
+  CF.loading ??= fetchData('comfort.bin', () => {}, './').then((buf) => {
+    const b = unpack(buf, CF.meta);
+    const bits = b.valid.data, nCells = CF.meta.lattice.nx * CF.meta.lattice.ny;
+    const cells = new Uint32Array(CF.meta.n_places);
+    let k = 0;
+    for (let c = 0; c < nCells; c++) if (bits[c >> 3] & (1 << (c & 7))) cells[k++] = c;
+    if (k !== CF.meta.n_places) throw new Error(`comfort.bin: ${k} places, comfort.json says ${CF.meta.n_places}`);
+    CF.cells = cells;
+    CF.W = b.w;
+  }).catch((err) => { console.error(err); CF.failed = true; });
+  return CF.loading;
+}
+
+/** View weight of material k at standpoint i, or null when it is not (yet) known. */
+function viewWeight(i, k) {
+  if (!CF.W || !H.slots) return null;
+  const r = rowOf(CF.cells, H.slots[H.here].cells[i]);
+  return r < 0 ? null : CF.W.at(r, k);
+}
+
+/** MRT and UTCI at standpoint i, as stored and with the switched-off sources replaced. */
+function comfortAt(i) {
+  const { M, B } = state;
+  const aL = M.body.eps_p, aK = M.body.alpha_sw;
+  const s0 = aL * B.e_lw.at(i) + aK * (B.e_sw_diffuse.at(i) + B.e_sw_direct.at(i) + B.e_sw_specular.at(i));
+  const tAir = CF.slot?.t_air_c ?? M.conditions.t_atm_c;
+  const ref = aL * SIGMA * (tAir + 273.15) ** 4;            // what a neutral surface sends over the whole view
+  let s = s0, unknown = false;
+  for (const key of state.off) {
+    if (key === 'direct') s -= aK * B.e_sw_direct.at(i);
+    else if (key === 'glint') s -= aK * B.e_sw_specular.at(i);
+    else {
+      const k = +key.slice(2);
+      const w = viewWeight(i, k);
+      if (w === null) { unknown = true; continue; }
+      s += w * ref - (aL * B.l3_lw.at(i, k) + aK * B.l3_sw.at(i, k));
+    }
+  }
+  const mrtOf = (x) => Math.pow(Math.max(x, 0) / (aL * SIGMA), 0.25) - 273.15;
+  const mrt0 = B.mrt_combined.at(i), mrt1 = mrt0 + (mrtOf(s) - mrtOf(s0));   // the stored value, moved by the change
+  const u = (m) => (CF.slot ? utci(CF.slot.t_air_c, m, CF.slot.wind_10m_m_s, CF.slot.rh_pct) : NaN);
+  return { mrt0, mrt1, utci0: u(mrt0), utci1: u(mrt1), s0, s1: s, unknown, changed: state.off.size > 0 };
+}
+
+const badge = (u) => {
+  if (!Number.isFinite(u)) return '<span class="ubadge none">outside the UTCI range</span>';
+  const c = utciCategory(u);
+  return `<span class="ubadge" style="--uc:${c.color}"><b>${f1(u)} °C</b> ${c.label}</span>`;
+};
+
+function renderComfort(i) {
+  const el = $('comfort');
+  if (!CF.slot) { el.hidden = true; return; }
+  el.hidden = false;
+  const r = comfortAt(i);
+  const names = state.M.levels.l3.pretty ?? state.M.levels.l3.labels;
+  const offNames = [...state.off].map((k) => (k === 'direct' ? 'direct sun' : k === 'glint' ? 'glint'
+    : names[+k.slice(2)].toLowerCase()));
+  const s = CF.slot;
+  let html = `<div class="urow"><span class="ulab">UTCI</span>${badge(r.utci0)}</div>`;
+  if (r.changed) {
+    html += `<div class="whatif"><div class="wtitle">Without ${offNames.join(', ')}
+        <button type="button" id="all-on">all on</button></div>
+      <div class="wrow"><span>MRT</span><b>${f1(r.mrt1)} °C</b><em>${signed(r.mrt1 - r.mrt0, 1)} K</em></div>
+      <div class="wrow"><span>UTCI</span>${badge(r.utci1)}${Number.isFinite(r.utci1) && Number.isFinite(r.utci0)
+        ? `<em>${signed(r.utci1 - r.utci0, 1)} K</em>` : ''}</div>
+      ${r.unknown ? '<p class="wnote">Loading what each material fills of the view…</p>' : ''}</div>`;
+  }
+  html += `<p class="unote">UTCI from this MRT with air ${f1(s.t_air_c)} °C, RH ${f0(s.rh_pct)} %, wind ${f1(s.wind_10m_m_s)} m/s at
+    10 m (${s.wind_source}), all fixed for this time. Untick a material below to replace it by a surface at air
+    temperature that reflects no sunlight; its shade stays.</p>`;
+  el.innerHTML = html;
+  $('all-on')?.addEventListener('click', () => { state.off.clear(); renderPanel(); });
+  if (r.unknown) ensureHistory().then(ensureComfort).then(() => { if (state.picked === i) renderComfort(i); });
+}
+
 /* Where each standpoint's glint comes from (scripts/glint_sources.py): per standpoint row, the
  * glass/water patches whose mirrored sunbeam reaches it, strongest first, with the W/m2 each
  * delivers to the body. A click on a lit standpoint draws a line to each; the "Glint sources"
@@ -661,7 +765,18 @@ function buildFields() {
       return best;
     }),
   });
-  for (const f of state.fields) f.range = f.log ?? rangeOf(f.values, f.exact);
+  // UTCI from each standpoint's MRT, with this time's air, humidity and wind (web/comfort.json), coloured by
+  // its stress category. NaN (grey) where the index is undefined.
+  if (CF.slot) {
+    const s = CF.slot;
+    const u = derive((i) => utci(s.t_air_c, B.mrt_combined.at(i), s.wind_10m_m_s, s.rh_pct));
+    const finite = u.filter(Number.isFinite);
+    state.fields.push(
+      { id: 'utci', label: 'UTCI', unit: '°C', cmap: 'YlOrRd', utci: true, digits: 1, values: u,
+        range: finite.length ? rangeOf(finite) : [0, 1] },
+      { id: 'utci_cat', label: 'UTCI, heat stress category', unit: '', bins: true, utci: true, values: u });
+  }
+  for (const f of state.fields) f.range ??= f.bins ? [0, 1] : f.log ?? rangeOf(f.values, f.exact);
   state.field = state.fields[0];
 
   // The project's vertical datum is the COLMAP georegistration's, so raw z is a large
@@ -937,11 +1052,16 @@ function applyField(field) {
   const attr = V.mrtMesh.geometry.attributes.color;
   const col = attr.array;
   // A categorical field carries its classes' own colours instead of a ramp.
-  const pal = field.palette && field.palette.map((c) => (Array.isArray(c) ? c : [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16))));
+  const hexRgb = (c) => (Array.isArray(c) ? c : [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16)));
+  const pal = field.palette && field.palette.map(hexRgb);
+  // UTCI: each value in its stress category's colour (utci.js), grey where the index is undefined
+  const binRgb = field.bins && UTCI_CATEGORIES.map(([, , c]) => hexRgb(c));
   for (let i = 0; i < state.N; i++) {
     const v = field.values[i];
-    const [r, g, b] = pal ? (pal[v] ?? NONE_RGB)
-      : field.log && !(v > 0) ? NONE_RGB
+    const [r, g, b] = binRgb ? (Number.isFinite(v) ? binRgb[utciCategory(v).index < 0 ? binRgb.length - 1
+      : utciCategory(v).index] : NONE_RGB)
+      : pal ? (pal[v] ?? NONE_RGB)
+      : !Number.isFinite(v) || (field.log && !(v > 0)) ? NONE_RGB
       : sampleCmap(field.cmap, field.log ? (Math.log10(Math.max(v, lo)) - llo) / lspan : (v - lo) * inv);
     col[i * 3] = srgbToLinear(r / 255) * 255;
     col[i * 3 + 1] = srgbToLinear(g / 255) * 255;
@@ -952,8 +1072,25 @@ function applyField(field) {
   // Categorical: swatches of the classes actually present here instead of the bar and its ticks.
   const sw = $('legend-swatches');
   sw.textContent = '';
-  $('legend-bar').style.display = pal ? 'none' : '';
-  $('legend-bar').parentElement.querySelector('.ticks').style.display = pal ? 'none' : '';
+  $('legend-bar').style.display = pal || binRgb ? 'none' : '';
+  $('legend-bar').parentElement.querySelector('.ticks').style.display = pal || binRgb ? 'none' : '';
+  if (binRgb) {
+    const seen = new Set();
+    for (const v of field.values) if (Number.isFinite(v)) seen.add(utciCategory(v).label);
+    UTCI_CATEGORIES.forEach(([hi, label, color], k) => {
+      if (!seen.has(label)) return;
+      const lo = k ? UTCI_CATEGORIES[k - 1][0] : -Infinity;
+      const range = !Number.isFinite(lo) ? `≤ ${hi}` : !Number.isFinite(hi) ? `> ${lo}` : `${lo} to ${hi}`;
+      const el = document.createElement('span');
+      el.className = 'swatch';
+      el.innerHTML = `<i style="background:${color}"></i>${label} (${range} °C)`;
+      sw.append(el);
+    });
+    const s = CF.slot;
+    $('legend-note').textContent = `UTCI from each standpoint's MRT; air ${f1(s.t_air_c)} °C, RH ${f0(s.rh_pct)} %, ` +
+      `wind ${f1(s.wind_10m_m_s)} m/s at 10 m, fixed for this time. Grey: outside the UTCI range.`;
+    return;
+  }
   if (pal) {
     const seen = new Set(field.values);
     field.classLabels.forEach((name, k) => {
@@ -971,7 +1108,9 @@ function applyField(field) {
     : field.unit === '°C' || field.unit === 'K' ? 1 : 0;
   $('legend-lo').textContent = field.discrete ? 'no' : `${lo.toFixed(d)} ${field.unit}`.trim();
   $('legend-hi').textContent = field.discrete ? 'yes' : `${field.log ? '≥ ' : ''}${hi.toFixed(field.log ? 0 : d)} ${field.unit}`.trim();
-  $('legend-note').textContent = field.log ? `log scale · ${field.none}` : '';
+  $('legend-note').textContent = field.log ? `log scale · ${field.none}`
+    : field.utci ? `air ${f1(CF.slot.t_air_c)} °C, RH ${f0(CF.slot.rh_pct)} %, wind ${f1(CF.slot.wind_10m_m_s)} m/s ` +
+      `at 10 m, fixed for this time; 26-32 moderate, 32-38 strong, 38-46 very strong, > 46 °C extreme heat stress` : '';
 }
 
 /* -------------------------------------------------------------- picking */
@@ -1016,7 +1155,10 @@ function bindPointer(canvas) {
       canvas.style.cursor = 'pointer';
       const f = state.field;
       const v = f.values[i];
-      el.innerHTML = f.discrete
+      el.innerHTML = f.utci
+        ? (Number.isFinite(v) ? `<i>UTCI</i> <b>${f1(v)}</b> °C · ${utciCategory(v).label}` : '<i>UTCI</i> outside its range')
+        : f.palette ? `<i>${f.label}</i> <b>${f.classLabels[v] ?? '—'}</b>`
+        : f.discrete
         ? `<i>${f.label}</i> <b>${v ? 'yes' : 'no'}</b>`
         : f.log && !(v > 0) ? `<i>${f.label}</i> <b>none</b>`
         : `<i>${f.label}</i> <b>${v.toFixed(f.digits ?? (f.unit === 'W/m²' ? 0 : 2))}</b> ${f.unit}`;
@@ -1045,6 +1187,7 @@ function select(i) {
   renderPanel();
   renderHistory(i);
   updateSlotLinks();
+  ensureHistory().then(ensureComfort);      // the material switch needs both; small, fetched once
   renderGlintRays(i);
   // Phone: the budget is behind a drawer, so a tap on the surface brings it up.
   if (drawersActive()) openDrawer('panel');
@@ -1089,14 +1232,15 @@ function levelRows(i, band) {
     };
   });
 
-  const cat = (blockLw, blockSw, level) => level.labels.map((name, k) => ({
+  const cat = (blockLw, blockSw, level, keyed) => level.labels.map((name, k) => ({
     name: (level.pretty ?? level.labels)[k],
     color: level.colors[k],
     value: mix(blockLw.at(i, k), blockSw.at(i, k)),
+    key: keyed ? `m:${k}` : undefined,          // the material switch (state.off)
   }));
 
   const l2 = cat(B.l2_lw, B.l2_sw, L2);
-  const l3 = cat(B.l3_lw, B.l3_sw, L3).filter((r) => r.value > 0.005);
+  const l3 = cat(B.l3_lw, B.l3_sw, L3, true).filter((r) => r.value > 0.005);
   // Materials are ranked by what they actually contribute here, with sky pinned last --
   // the same ordering the notebook's figure uses.
   const skyName = (L3.pretty ?? L3.labels)[L3.labels.length - 1];
@@ -1109,8 +1253,8 @@ function levelRows(i, band) {
   const extras = [];
   if (band !== 'lw') {
     const direct = B.e_sw_direct.at(i), spec = B.e_sw_specular.at(i);
-    if (direct > 0) extras.push({ name: 'Direct sun on body', value: mix(0, direct), extra: true });
-    if (spec > 0) extras.push({ name: 'Specular glint', value: mix(0, spec), extra: true });
+    if (direct > 0) extras.push({ name: 'Direct sun on body', value: mix(0, direct), extra: true, key: 'direct' });
+    if (spec > 0) extras.push({ name: 'Specular glint', value: mix(0, spec), extra: true, key: 'glint' });
   }
 
   // Direction carries no extras: the direct beam and the glint are contributions to the
@@ -1177,8 +1321,14 @@ function renderPanel() {
   $('levels').innerHTML = levelRows(i, band).map(({ title, rows, extras, irradiance }) => {
     const all = rows.concat(extras);
     const max = Math.max(...all.map((r) => r.value), 1e-9);
-    const bars = all.map((r) => `
-      <div class="bar-row${r.extra ? ' extra' : ''}${!irradiance && r.value / total < 0.005 ? ' muted' : ''}">
+    const switchable = title === M.levels.l3.name && CF.slot;     // the Material level carries the switches
+    const bars = all.map((r) => {
+      const sw = switchable && r.key, off = sw && state.off.has(r.key);
+      return `
+      <div class="bar-row${r.extra ? ' extra' : ''}${!irradiance && r.value / total < 0.005 ? ' muted' : ''}${
+        sw ? ' toggle' : ''}${off ? ' off' : ''}">
+        ${sw ? `<input type="checkbox" class="src-toggle" data-key="${r.key}"${off ? '' : ' checked'}
+          title="Untick to replace it by a surface at air temperature" aria-label="${r.name}">` : ''}
         <span class="swatch"${r.color ? ` style="background:${r.color}"` : ''}></span>
         <div class="body">
           <div class="top">
@@ -1189,7 +1339,8 @@ function renderPanel() {
           <div class="track"><div class="fill" style="width:${(r.value / max * 100).toFixed(1)}%;background:${r.color ?? 'var(--warn)'}"></div></div>
           ${r.sub ? `<div class="sub">${r.sub}</div>` : ''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     const caption = irradiance
       ? (band === 'comb' ? `Absorbed on each body face, a_l·L + a_k·K, before F_i`
                          : `Received by each body face · what a sensor facing that way reads`)
@@ -1211,6 +1362,7 @@ function renderPanel() {
     `instead, because the angular factors are near-constant and weighting by them makes ` +
     `every standpoint look alike; F_i is on each row and is still inside MRT. Values are ` +
     `transported quantised to ~0.005 W/m², so shares may round by a tenth.`;
+  renderComfort(i);
 }
 
 /* --------------------------------------------------------------- chrome */
@@ -1332,6 +1484,15 @@ function buildChrome() {
   });
 
   $('reset').addEventListener('click', resetView);
+
+  // The material switch: a change re-renders the panel with the source replaced (renderComfort).
+  $('levels').addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t.classList?.contains('src-toggle')) return;
+    if (t.checked) state.off.delete(t.dataset.key); else state.off.add(t.dataset.key);
+    renderPanel();
+    window.urfTrack?.('source-switch');
+  });
 
   for (const b of $('bands').querySelectorAll('button')) {
     b.addEventListener('click', () => {

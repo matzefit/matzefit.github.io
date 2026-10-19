@@ -9,6 +9,8 @@ web/
   index.html  app.js  colormaps.js  style.css
   .nojekyll            tells GitHub Pages to serve the files as they are (no Jekyll)
   visits.js            visitor counting, off until an ID is filled in (see below)
+  slots.json           the time slots (written by precompute_attribution.py)
+  history.json, history.bin.gz   every slot's MRT and budget per place (scripts/web_history.py)
   data/                built by the pipeline (git-ignored in the URF repo)
     manifest.json        labels, colours, conditions, block layout of attribution.bin
     attribution.bin.gz   per-standpoint MRT and its three-level radiation budget
@@ -80,6 +82,7 @@ python scripts/precompute_attribution.py   # manifest.json, attribution.bin
 python scripts/make_web_assets.py          # mrt_surface.glb, scene.glb, scene.json
 python scripts/make_point_cloud.py         # cloud.bin, cloud.json
 python scripts/glint_sources.py           # glints.bin, glints.json (after make_web_assets)
+python scripts/web_history.py             # web/history.*, once every slot is built (see below)
 ```
 
 Sizes are set in `site.toml` `[web]`:
@@ -108,6 +111,78 @@ more, the title card shows a time switcher. `?slot=1100` opens that slot; only d
 accepted, so the query can't point anywhere else. All slots share one geometry
 (`scripts/register_slot.py`), so a standpoint is the same place in each. Each folder is about
 83 MB; three slots stay far below the 1 GB site limit.
+
+## Switching a source off, and UTCI
+
+**UTCI.** Under the MRT, a picked standpoint shows its UTCI and stress category as a coloured badge:
+- no thermal stress (9–26 °C) is green;
+- moderate, strong, very strong and extreme heat stress (26, 32, 38, 46 °C upward) run from yellow to dark red.
+
+The MRT is the standpoint's own. Air temperature, humidity and wind are fixed for each time:
+- air and humidity are the conditions under the title;
+- the 10 m wind comes from the NCM Jumeirah station (block.toml `[atmosphere] wind_speed_10m_m_s`, read off its
+  screenshots).
+
+The "UTCI, heat stress" field colours the whole surface by these categories.
+- **Polynomial:** `utci.js`, written by `scripts/make_utci_js.py` from the official 211-term polynomial
+  (Bröde et al. 2012) in pythermalcomfort 2.10.0. It matches that reference to 4·10⁻¹¹ K on 20,000 random inputs.
+- **Valid range:** −50 < air < 50 °C, −30 < MRT − air < 70 K, wind 0.5–17 m/s. Outside it the badge says so and
+  the map is grey.
+
+**The material switch.** Each row of the panel's Material list (and direct sun and glint) has a checkbox. Unticking
+a material replaces what it sends the body by what a surface at air temperature that reflects no sunlight would
+send:
+
+    S_str' = S_str - (a_l l3_lw_k + a_k l3_sw_k) + a_l W_k sigma T_air^4
+
+- **What changes:** MRT and UTCI are recomputed, with the change in K.
+- **What stays:** the surface stays in place, so its shade stays too; only what it emits and reflects changes.
+- **Direct sun and glint off:** as if the body were shaded from them.
+- **Everything off:** MRT equals the air temperature.
+- **Across standpoints:** the switches stay as set when another standpoint is picked; "all on" resets them.
+
+W_k, the share of the body's view material k fills, comes from `comfort.bin.gz` (with `comfort.json`, in `web/`
+next to `slots.json`). `scripts/web_comfort.py` writes them after `web_history.py`:
+- **The rays:** it casts the attribution's own 401 rays (13:00 workspace; geometry is shared by every slot) from
+  every place shown at any time.
+- **The check:** binning the same rays' longwave by material reproduces the stored 13:00 attribution to half its
+  storage step.
+
+```
+python scripts/make_utci_js.py --source <pythermalcomfort>/models/utci.py   # once; writes web/utci.js
+python scripts/web_comfort.py                                              # web/comfort.json, comfort.bin.gz
+```
+
+## The same place over the day
+
+A picked standpoint's panel has an **Over the day** section: the place at every time it was flown.
+- **Chart:** MRT, its longwave-only part and the air temperature at each time. A time without this
+  place reads "not here": that flight did not cover it (06:24 is the Greens only, 08:07 Barsha only),
+  or left it without thermal coverage.
+- **Bars and table:** what each source adds to the absorbed flux (longwave + a_k/ε_p × shortwave,
+  the panel's Combined budget), in the same order at every time. The largest source (sky aside) is
+  in bold for each time. The last line names it and says what grew most from the first time to the last.
+- **Links:** a time in the chart or the bars opens that time's page on the same place (`?cell=<n>`,
+  the cell of the shared lattice). The time switcher in the title card follows the picked place too.
+
+It reads `history.json` and `history.bin.gz` in `web/` (next to `slots.json`, shared by every
+slot's page), written by `scripts/web_history.py` after `precompute_attribution.py` has built every
+slot:
+
+```
+python scripts/web_history.py
+```
+
+The script takes the values from each slot's `attribution.bin`, and recomputes nothing. It first
+checks every slot's rows against that slot's stored grid (count, standpoint heights, MRT). It also
+checks that the sources sum to each standpoint's total and the total to its MRT. Each slot's
+`generated` stamp is recorded: the viewer switches the section off when any slot's manifest
+differs, so rebuilding one slot without rerunning this step shows no stale history. The 13.2 MB
+file is fetched only the first time a standpoint is picked.
+
+The 2026-10-15 build covers, on the viewer's 2 m lattice:
+- 214,023 places flown three times, 12,380 four times (where the 06:24 and 08:07 flights overlap);
+- 13,941 places flown twice, 24,087 once.
 
 ## Try it locally
 
@@ -199,6 +274,7 @@ Dubai, 13:00 slot, rebuilt 2026-09-29. Changes since 2026-09-27:
 | cloud.bin.gz | 38.3 MB (49.5 raw) | streamed after the page opens |
 | glints.bin.gz | 0.2 MB (2.2 raw) | after the page opens |
 | scene.glb.gz | 18.7 MB (27.4 raw) | only when "Solid mesh" is switched on |
+| ../history.bin.gz | 13.2 MB (27.2 raw), shared by all slots | the first time a standpoint is picked |
 | *.json | < 10 kB each | first |
 
 Total 83 MB. Load times, measured in headless Edge with 40 ms latency on the 85 MB build of
