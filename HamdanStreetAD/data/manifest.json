@@ -1,18 +1,18 @@
 {
   "format": "urf-attribution/1",
-  "generated": "2026-09-29T13:57:03.803134+00:00",
-  "place": "Dubai, Barsha Heights & The Greens",
-  "n_points": 248856,
-  "n_points_full": 248856,
+  "generated": "2026-10-24T06:33:37.177210+00:00",
+  "place": "Abu Dhabi, Hamdan Street",
+  "n_points": 40183,
+  "n_points_full": 40183,
   "partial": false,
   "bin": "attribution.bin",
-  "bin_bytes": 33097848,
+  "bin_bytes": 5344339,
   "blocks": [
     {
       "name": "mrt_combined",
       "dtype": "float32",
       "offset": 0,
-      "length": 995424,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "degC, reported (incl. specular)"
@@ -20,8 +20,8 @@
     {
       "name": "mrt_longwave",
       "dtype": "float32",
-      "offset": 995424,
-      "length": 995424,
+      "offset": 160732,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "degC, longwave-only component"
@@ -29,8 +29,8 @@
     {
       "name": "e_lw",
       "dtype": "float32",
-      "offset": 1990848,
-      "length": 995424,
+      "offset": 321464,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "W/m2, body-weighted longwave irradiance"
@@ -38,8 +38,8 @@
     {
       "name": "e_sw_diffuse",
       "dtype": "float32",
-      "offset": 2986272,
-      "length": 995424,
+      "offset": 482196,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "W/m2, diffuse + reflected shortwave"
@@ -47,8 +47,8 @@
     {
       "name": "e_sw_direct",
       "dtype": "float32",
-      "offset": 3981696,
-      "length": 995424,
+      "offset": 642928,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "W/m2, f_p*DNI*delta_shadow on the body"
@@ -56,8 +56,8 @@
     {
       "name": "e_sw_specular",
       "dtype": "float32",
-      "offset": 4977120,
-      "length": 995424,
+      "offset": 803660,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "W/m2, glint intercepted by the body"
@@ -65,8 +65,8 @@
     {
       "name": "z",
       "dtype": "float32",
-      "offset": 5972544,
-      "length": 995424,
+      "offset": 964392,
+      "length": 160732,
       "cols": 1,
       "scale": null,
       "note": "m, standpoint height (ground + 1.1)"
@@ -74,8 +74,8 @@
     {
       "name": "sunlit",
       "dtype": "uint8",
-      "offset": 6967968,
-      "length": 248856,
+      "offset": 1125124,
+      "length": 40183,
       "cols": 1,
       "scale": null,
       "note": "1 where the body sees the sun"
@@ -83,55 +83,55 @@
     {
       "name": "l1_lw",
       "dtype": "uint16",
-      "offset": 7216824,
-      "length": 2986272,
+      "offset": 1165307,
+      "length": 482196,
       "cols": 6,
-      "scale": 0.012506353121389847,
+      "scale": 0.010615409383597823,
       "note": "W/m2 plane irradiance L_i, pre-F_i, order levels.l1.labels"
     },
     {
       "name": "l1_sw",
       "dtype": "uint16",
-      "offset": 10203096,
-      "length": 2986272,
+      "offset": 1647503,
+      "length": 482196,
       "cols": 6,
-      "scale": 0.007113444573962023,
+      "scale": 0.004114734305998246,
       "note": "W/m2 plane irradiance D_i, pre-F_i, order levels.l1.labels"
     },
     {
       "name": "l2_lw",
       "dtype": "uint16",
-      "offset": 13189368,
-      "length": 2986272,
+      "offset": 2129699,
+      "length": 482196,
       "cols": 6,
-      "scale": 0.009147898482926086,
+      "scale": 0.006352178464642884,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l2_sw",
       "dtype": "uint16",
-      "offset": 16175640,
-      "length": 2986272,
+      "offset": 2611895,
+      "length": 482196,
       "cols": 6,
-      "scale": 0.003252465538640818,
+      "scale": 0.0017904135857094788,
       "note": "W/m2 body-weighted contribution, order levels.l2.labels"
     },
     {
       "name": "l3_lw",
       "dtype": "uint16",
-      "offset": 19161912,
-      "length": 6967968,
+      "offset": 3094091,
+      "length": 1125124,
       "cols": 14,
-      "scale": 0.009720598925125449,
+      "scale": 0.00663773710761752,
       "note": "W/m2 body-weighted contribution, order levels.l3.labels"
     },
     {
       "name": "l3_sw",
       "dtype": "uint16",
-      "offset": 26129880,
-      "length": 6967968,
+      "offset": 4219215,
+      "length": 1125124,
       "cols": 14,
-      "scale": 0.0041552771870577605,
+      "scale": 0.0017904135857094788,
       "note": "W/m2 body-weighted contribution, order levels.l3.labels"
     }
   ],
@@ -248,34 +248,35 @@
   },
   "conditions": {
     "when": "2026-09-24 13:32:50+04:00",
-    "lat": 25.0934,
-    "lon": 55.1722,
-    "altitude_m": 10.0,
+    "lat": 24.491232,
+    "lon": 54.364884,
+    "altitude_m": 5.0,
     "t_atm_c": 36.9,
     "rh_pct": 45.0,
     "cloud_cover_tenths": 0.0,
     "sky_downwelling_lw": 428.3111845797411,
     "ghi": 896.0,
-    "dni": 884.3621212600656,
-    "dhi": 148.68001927483738,
-    "clearness_index": 0.781142709300678,
-    "sun_elevation_deg": 57.676053837272946,
-    "sun_azimuth_deg": 220.59179230017162,
-    "note": "13:00 slot, all Greens + Barsha Heights missions; M350 RTK + H30T, gimbal -45 deg; clear sky; leaf-on",
-    "air_source": "NCM Jumeirah station, 13:30"
+    "dni": 872.7831802451669,
+    "dhi": 150.9641085865071,
+    "clearness_index": 0.7732786473217961,
+    "sun_elevation_deg": 58.60896126783777,
+    "sun_azimuth_deg": 219.98021255468404,
+    "note": "street-level video, 2560 x 1440, 5 frames/s; longwave predicted from the RGB 3D model (Dubai-trained)",
+    "air_source": "Dubai survey instant (24 Sept 2026, 13:32), applied to Abu Dhabi",
+    "coverage": ""
   },
   "grid": {
-    "nx": 1023,
-    "ny": 825,
-    "spacing": 2.0,
-    "x0": -1488.17822265625,
-    "y0": -851.044921875,
-    "stride": 2,
+    "nx": 820,
+    "ny": 654,
+    "spacing": 1.0,
+    "x0": -597.3458251953125,
+    "y0": -497.4619445800781,
+    "stride": 1,
     "analysis_spacing": 1.0
   },
-  "closure_max_error_w_m2": 9.094947017729282e-13,
+  "closure_max_error_w_m2": 7.958078640513122e-13,
   "cross_check_max_dmrt_c": {
-    "longwave": 0.0,
+    "longwave": 5.684341886080802e-14,
     "combined": 5.684341886080802e-14
   }
 }
