@@ -1,0 +1,282 @@
+{
+  "format": "urf-attribution/1",
+  "generated": "2026-09-29T16:22:46.682686+00:00",
+  "place": "Dubai, Barsha Heights & The Greens",
+  "n_points": 141010,
+  "n_points_full": 141010,
+  "partial": false,
+  "bin": "attribution.bin",
+  "bin_bytes": 18754330,
+  "blocks": [
+    {
+      "name": "mrt_combined",
+      "dtype": "float32",
+      "offset": 0,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "degC, reported (incl. specular)"
+    },
+    {
+      "name": "mrt_longwave",
+      "dtype": "float32",
+      "offset": 564040,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "degC, longwave-only component"
+    },
+    {
+      "name": "e_lw",
+      "dtype": "float32",
+      "offset": 1128080,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, body-weighted longwave irradiance"
+    },
+    {
+      "name": "e_sw_diffuse",
+      "dtype": "float32",
+      "offset": 1692120,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, diffuse + reflected shortwave"
+    },
+    {
+      "name": "e_sw_direct",
+      "dtype": "float32",
+      "offset": 2256160,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, f_p*DNI*delta_shadow on the body"
+    },
+    {
+      "name": "e_sw_specular",
+      "dtype": "float32",
+      "offset": 2820200,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "W/m2, glint intercepted by the body"
+    },
+    {
+      "name": "z",
+      "dtype": "float32",
+      "offset": 3384240,
+      "length": 564040,
+      "cols": 1,
+      "scale": null,
+      "note": "m, standpoint height (ground + 1.1)"
+    },
+    {
+      "name": "sunlit",
+      "dtype": "uint8",
+      "offset": 3948280,
+      "length": 141010,
+      "cols": 1,
+      "scale": null,
+      "note": "1 where the body sees the sun"
+    },
+    {
+      "name": "l1_lw",
+      "dtype": "uint16",
+      "offset": 4089290,
+      "length": 1692120,
+      "cols": 6,
+      "scale": 0.008139694853564652,
+      "note": "W/m2 plane irradiance L_i, pre-F_i, order levels.l1.labels"
+    },
+    {
+      "name": "l1_sw",
+      "dtype": "uint16",
+      "offset": 5781410,
+      "length": 1692120,
+      "cols": 6,
+      "scale": 0.0001674769637998432,
+      "note": "W/m2 plane irradiance D_i, pre-F_i, order levels.l1.labels"
+    },
+    {
+      "name": "l2_lw",
+      "dtype": "uint16",
+      "offset": 7473530,
+      "length": 1692120,
+      "cols": 6,
+      "scale": 0.006991629219031179,
+      "note": "W/m2 body-weighted contribution, order levels.l2.labels"
+    },
+    {
+      "name": "l2_sw",
+      "dtype": "uint16",
+      "offset": 9165650,
+      "length": 1692120,
+      "cols": 6,
+      "scale": 7.951022424001782e-05,
+      "note": "W/m2 body-weighted contribution, order levels.l2.labels"
+    },
+    {
+      "name": "l3_lw",
+      "dtype": "uint16",
+      "offset": 10857770,
+      "length": 3948280,
+      "cols": 14,
+      "scale": 0.007487725651586768,
+      "note": "W/m2 body-weighted contribution, order levels.l3.labels"
+    },
+    {
+      "name": "l3_sw",
+      "dtype": "uint16",
+      "offset": 14806050,
+      "length": 3948280,
+      "cols": 14,
+      "scale": 7.951022424001782e-05,
+      "note": "W/m2 body-weighted contribution, order levels.l3.labels"
+    }
+  ],
+  "levels": {
+    "l1": {
+      "name": "Direction",
+      "labels": [
+        "East",
+        "West",
+        "North",
+        "South",
+        "Up",
+        "Down"
+      ],
+      "colors": [
+        "#55a868",
+        "#8172b2",
+        "#4c72b0",
+        "#c44e52",
+        "#87bff0",
+        "#8c6d46"
+      ],
+      "factors": [
+        0.22,
+        0.22,
+        0.22,
+        0.22,
+        0.06,
+        0.06
+      ],
+      "note": "contribution is F_i * plane irradiance; the stored values are the plane irradiances themselves (what a six-directional sensor reads)"
+    },
+    "l2": {
+      "name": "Element",
+      "labels": [
+        "Roof",
+        "Facade",
+        "Ground",
+        "Vegetation",
+        "Vehicle",
+        "Sky"
+      ],
+      "colors": [
+        "#d6604d",
+        "#f2e4bd",
+        "#4a4a52",
+        "#458b4d",
+        "#d55e00",
+        "#87bff0"
+      ],
+      "note": "geometric classification (Stage 5) with the point's own normal splitting building into roof (|n_z| >= 0.5) and facade; vegetation from SAM 3; vehicle only where the blob detector and the material agree."
+    },
+    "l3": {
+      "name": "Material",
+      "labels": [
+        "glass",
+        "aluminium_cladding",
+        "concrete",
+        "stone_paving",
+        "asphalt_road",
+        "vegetation",
+        "grass",
+        "water",
+        "sand",
+        "vehicle",
+        "flat_roof",
+        "plaster_stucco",
+        "unclassified",
+        "sky"
+      ],
+      "pretty": [
+        "Glass",
+        "Aluminium cladding",
+        "Concrete",
+        "Paving (red)",
+        "Asphalt / grey paving",
+        "Trees",
+        "Grass",
+        "Water",
+        "Sand",
+        "Vehicle",
+        "Flat roof",
+        "Plaster/render",
+        "Unclassified",
+        "Sky"
+      ],
+      "colors": [
+        "#53b4e0",
+        "#99a5b1",
+        "#bdb8ab",
+        "#c7c2b2",
+        "#4a4a52",
+        "#458b4d",
+        "#8dbf64",
+        "#3b7eb3",
+        "#e0c99c",
+        "#d55e00",
+        "#66666f",
+        "#f2e4bd",
+        "#d9d9d9",
+        "#87bff0"
+      ],
+      "note": "SAM 3 open-vocabulary material at the hit point"
+    }
+  },
+  "body": {
+    "model": "standing person: VDI 3787 six-directional F_i (0.22/0.06), f_p VDI 3789, a_k 0.70, a_l 0.97",
+    "alpha_sw": 0.7,
+    "eps_p": 0.97,
+    "lw_coeff": 1.0,
+    "sw_coeff": 0.7216494845360825,
+    "height_above_ground": 1.1,
+    "n_rays": 401
+  },
+  "conditions": {
+    "when": "2026-09-24 06:24:05+04:00",
+    "lat": 25.0934,
+    "lon": 55.1722,
+    "altitude_m": 10.0,
+    "t_atm_c": 29.1,
+    "rh_pct": 77.5,
+    "cloud_cover_tenths": 0.0,
+    "sky_downwelling_lw": 387.3024702866522,
+    "ghi": 11.0,
+    "dni": 0.0,
+    "dhi": 11.0,
+    "clearness_index": 0.12467465173449184,
+    "sun_elevation_deg": 2.9134029978684866,
+    "sun_azimuth_deg": 91.72483261183987,
+    "note": "The Greens, flown 06:06-07:03 just after sunrise; clear sky",
+    "air_source": "NCM Jumeirah station, 06:15-06:30; air from ground measurements",
+    "coverage": "This early slot maps The Greens only. Barsha Heights was flown two hours later, with the sun far higher, and is mapped as its own instant."
+  },
+  "grid": {
+    "nx": 1023,
+    "ny": 825,
+    "spacing": 2.0,
+    "x0": -1488.17822265625,
+    "y0": -851.044921875,
+    "stride": 2,
+    "analysis_spacing": 1.0
+  },
+  "closure_max_error_w_m2": 9.094947017729282e-13,
+  "cross_check_max_dmrt_c": {
+    "longwave": 0.0,
+    "combined": 0.0
+  }
+}

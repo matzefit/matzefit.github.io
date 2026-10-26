@@ -1,0 +1,27 @@
+{
+  "origin_enu": [
+    -307.35890762276426,
+    -104.27292088523434,
+    -219.87408447265625
+  ],
+  "axes": "glTF Y-up: (x,y,z) = (east, up, -north) about origin_enu",
+  "mrt_surface": {
+    "file": "mrt_surface.glb",
+    "vertices": 246523,
+    "triangles": 418764,
+    "grid_stride": 2,
+    "mrt_min": 34.14486312866211,
+    "mrt_max": 90.30469512939453
+  },
+  "scene": {
+    "file": "scene.glb",
+    "vertices": 650963,
+    "triangles": 1415629,
+    "voxel_m": 3.0,
+    "chroma": 0.22,
+    "grey_range": [
+      0.42,
+      0.86
+    ]
+  }
+}
