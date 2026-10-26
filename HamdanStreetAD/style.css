@@ -410,3 +410,7 @@ table.htab {
 @media (prefers-reduced-motion: reduce) {
   #sidebar, #panel { transition: none; }
 }
+
+/* Abu Dhabi street demo: the line under the conditions that says what is predicted (always shown). */
+#titlecard .demo-note { margin-top: 8px; padding: 6px 8px; border-left: 2px solid #f5b26c; color: #e8d3b8;
+  font-size: 12px; line-height: 1.4; }
