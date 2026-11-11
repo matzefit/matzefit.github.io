@@ -281,7 +281,7 @@ async function init() {
   loadCloud(cloudMeta);   // not awaited: the view is already interactive
   loadGlints();           // likewise; optional (older builds have no glints.json)
   loadRays();             // likewise; optional (scripts/viewer/web_rays.py)
-  if (location.hash === '#debug') window.urfDebug = { state, V, H, CF, R, select, setRayFocus };   // headless tests only
+  if (location.hash === '#debug') window.urfDebug = { state, V, H, CF, R, select, setRayFocus, pickAt };   // headless tests only
   await loadHistoryMeta();
   if (CELL >= 0) openCell(CELL);   // arrived from another time's link: same place, this time
 }
@@ -764,34 +764,77 @@ function loadRayTiles(key) {
   return R.tiles.get(key);
 }
 
-function clearRays() {
-  if (!R.obj) return;
-  V.scene.remove(R.obj);
-  R.obj.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
-  R.obj = null;
+/* One fixed set of line segments, made once: slot j < 401 is ray j, slot 401 + j its mirrored leg (off unless the
+ * engine traced that mirror), the last slot the sun beam. The drawn segments ease toward each standpoint's targets
+ * (stepRays, from the render loop), so dragging the marker sweeps the rays from one standpoint to the next instead of
+ * redrawing them; a click snaps. Ray j points the same way at every standpoint, so easing slot by slot is easing
+ * each direction's ray from where it ended to where it ends now. */
+const RAY_EASE_S = 0.07;                 // s: time constant of the easing
+const RAY_SNAP_M = 30;                   // m: a move farther than this snaps
+
+function ensureRayObject() {
+  if (R.obj) return;
+  const NR = R.geo.n_rays, cap = 2 * NR + 1;
+  R.tPos = new Float32Array(cap * 6);
+  R.tCol = new Float32Array(cap * 8);
+  R.segs = Array.from({ length: cap }, (_, k) => (k < NR ? { j: k, kind: 'ray', len: 0, on: false }
+    : k < 2 * NR ? { j: k - NR, kind: 'leg', len: 0, sky: false, on: false } : { j: -1, kind: 'sun', on: false }));
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cap * 6), 3).setUsage(THREE.DynamicDrawUsage));
+  geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(cap * 8), 4).setUsage(THREE.DynamicDrawUsage));
+  // Two passes over one geometry: depth-tested at full strength, and faintly through everything, so a ray behind
+  // a facade or under the MRT surface (every downward ray) is still there, just quieter.
+  const solid = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true,
+                                                                          depthWrite: false }));
+  const xray = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.45, depthTest: false, depthWrite: false }));
+  solid.renderOrder = 996;
+  xray.renderOrder = 1000;      // over the picked-standpoint marker (999), which would hide the shortest rays
+  solid.frustumCulled = xray.frustumCulled = false;   // the positions move every frame while easing
+  const grp = new THREE.Group();
+  grp.add(solid, xray);
+  grp.visible = false;
+  R.obj = grp;
+  R.solid = solid;
+  V.scene.add(grp);
 }
 
-/** Draw the rays of standpoint `i` (-1: none). The tile may still be on its way; a newer pick wins. */
-async function renderRays(i) {
-  clearRays();
+function clearRays() {
   R.cur = null;
-  renderRayNote();
-  if (!R.geo || i < 0) return;
-  const L = R.geo.lattice, p = V.positions, o = V.meta.origin_enu;
+  if (R.obj) R.obj.visible = false;
+}
+
+/** Draw the rays of standpoint `i` (-1: none). `smooth`: ease from the rays shown now (a drag step); otherwise the old
+ *  rays go at once and the new ones snap in. The tile may still be on its way; a newer pick wins. */
+async function renderRays(i, smooth = false) {
+  if (!R.geo || i < 0) { clearRays(); renderRayNote(); return; }
+  const L = R.geo.lattice, p = V.positions, o = V.meta.origin_enu, T = R.geo.tile;
   const ix = Math.round((p[i * 3] + o[0] - L.x0) / L.spacing);
   const iy = Math.round((-p[i * 3 + 2] + o[1] - L.y0) / L.spacing);
-  const cell = ix * L.ny + iy, key = `${Math.floor(ix / R.geo.tile)}_${Math.floor(iy / R.geo.tile)}`;
-  $('ray-note').textContent = 'Loading the rays…';
+  const cell = ix * L.ny + iy, tx = Math.floor(ix / T), ty = Math.floor(iy / T), key = `${tx}_${ty}`;
+  if (!smooth) { clearRays(); $('ray-note').textContent = 'Loading the rays…'; }
+  else {
+    // dragging toward a tile's edge: fetch the neighbour before the marker gets there
+    const ex = ix - tx * T, ey = iy - ty * T, near = 4;
+    for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
+      if ((dx || dy) && (dx >= 0 || ex < near) && (dx <= 0 || ex >= T - near) && (dy >= 0 || ey < near)
+          && (dy <= 0 || ey >= T - near)) loadRayTiles(`${tx + dx}_${ty + dy}`);
+    }
+  }
   const t = await loadRayTiles(key);
   if (state.picked !== i) return;
   const pv = t ? rowOf(t.v.rows, i) : -1, pg = t ? rowOf(t.g.cells, cell) : -1;
   if (pv < 0 || pg < 0 || t.v.cells[pv] !== cell) {
     console.warn(`no rays stored for standpoint ${i} (cell ${cell}, tile ${key})`);
+    clearRays();
     $('ray-note').textContent = 'No rays stored for this standpoint.';
     return;
   }
+  const prev = R.cur;
   R.cur = { i, g: t.g, v: t.v, pg, pv };
-  buildRays();
+  ensureRayObject();
+  const far = !prev || Math.hypot(p[i * 3] - p[prev.i * 3], p[i * 3 + 2] - p[prev.i * 3 + 2]) > RAY_SNAP_M;
+  buildRays(!smooth || far);
   renderRayNote();
 }
 
@@ -816,61 +859,62 @@ function rayValue(j) {
   };
 }
 
-/** Segments: one per ray (standpoint -> first hit, or a fading stub to the sky), one per traced mirror (the leg off
- *  the glass or water), and the direct beam when the body sees the sun. Colours are set by colourRays. */
-function buildRays() {
-  const { i, g, v, pg, pv } = R.cur, NR = R.geo.n_rays;
+/** Targets for every slot: each ray from the standpoint to its first hit (or a stub toward the sky), each traced
+ *  mirror's leg from that hit, the sun beam when the body sees the sun; slots not in use collapse to a point with no
+ *  colour. `snap`: show the targets at once; otherwise stepRays eases toward them. */
+function buildRays(snap) {
+  const { i, g, v, pg, pv } = R.cur, NR = R.geo.n_rays, S = R.segs, Tp = R.tPos;
   const P = V.positions, ox = P[i * 3], oy = P[i * 3 + 1], oz = P[i * 3 + 2];
-  const pos = [], segs = [];
-  const ends = new Float32Array(NR * 3);
   for (let j = 0; j < NR; j++) {
     const len = rayLen(g.dist[j * g.n + pg], RAY_SKY_LEN);
-    const e = [ox + R.dirs[j * 3] * len, oy + R.dirs[j * 3 + 1] * len, oz + R.dirs[j * 3 + 2] * len];
-    ends.set(e, j * 3);
-    pos.push(ox, oy, oz, ...e);
-    segs.push({ j, kind: 'ray', len });
+    const ex = ox + R.dirs[j * 3] * len, ey = oy + R.dirs[j * 3 + 1] * len, ez = oz + R.dirs[j * 3 + 2] * len;
+    Tp.set([ox, oy, oz, ex, ey, ez], j * 6);
+    Object.assign(S[j], { len, on: true });
+    Tp.set([ex, ey, ez, ex, ey, ez], (NR + j) * 6);              // the leg, off until a traced mirror says otherwise
+    Object.assign(S[NR + j], { on: false, sky: false, len: 0 });
   }
   for (let k = g.legStart[pg]; k < g.legStart[pg + 1]; k++) {
     const j = g.legRay[k];
     if (!(v.flags[j * v.n + pv] & 1)) continue;   // this slot's engine did not trace the mirror (no own emission)
     const d = enuToView(...octDecode(g.legOct[2 * k], g.legOct[2 * k + 1]));
-    const len = rayLen(g.legDist[k], RAY_LEG_SKY_LEN);
-    const h = ends.subarray(j * 3, j * 3 + 3);
-    pos.push(h[0], h[1], h[2], h[0] + d[0] * len, h[1] + d[1] * len, h[2] + d[2] * len);
-    segs.push({ j, kind: 'leg', len, sky: !g.legDist[k] });
+    const len = rayLen(g.legDist[k], RAY_LEG_SKY_LEN), s = (NR + j) * 6;
+    Tp.set([Tp[s] + d[0] * len, Tp[s + 1] + d[1] * len, Tp[s + 2] + d[2] * len], s + 3);
+    Object.assign(S[NR + j], { on: true, sky: !g.legDist[k], len });
   }
-  const sun = R.val.sun_enu;
-  if (sun && state.B.sunlit.at(i)) {
-    const d = enuToView(...sun);
-    pos.push(ox, oy, oz, ox + d[0] * RAY_SUN_LEN, oy + d[1] * RAY_SUN_LEN, oz + d[2] * RAY_SUN_LEN);
-    segs.push({ j: -1, kind: 'sun' });
-  }
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
-  geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(segs.length * 8), 4));
-  // Two passes over one geometry: depth-tested at full strength, and faintly through everything, so a ray behind
-  // a facade or under the MRT surface (every downward ray) is still there, just quieter.
-  const solid = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true,
-                                                                          depthWrite: false }));
-  const xray = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
-    vertexColors: true, transparent: true, opacity: 0.45, depthTest: false, depthWrite: false }));
-  solid.renderOrder = 996;
-  xray.renderOrder = 1000;      // over the picked-standpoint marker (999), which would hide the shortest rays
-  const grp = new THREE.Group();
-  grp.add(solid, xray);
-  grp.visible = $('l-rays').checked;
-  R.obj = grp;
-  R.solid = solid;
-  R.segs = segs;
-  V.scene.add(grp);
+  const sun = R.val.sun_enu, lit = !!(sun && state.B.sunlit.at(i)), d = enuToView(...(sun ?? [0, 0, 1]));
+  const L = lit ? RAY_SUN_LEN : 0;
+  Tp.set([ox, oy, oz, ox + d[0] * L, oy + d[1] * L, oz + d[2] * L], 2 * NR * 6);
+  S[2 * NR].on = lit;
   colourRays();
+  R.obj.visible = $('l-rays').checked;
+  if (snap) {
+    const geom = R.solid.geometry;
+    geom.attributes.position.array.set(Tp);
+    geom.attributes.color.array.set(R.tCol);
+    geom.attributes.position.needsUpdate = geom.attributes.color.needsUpdate = true;
+    geom.computeBoundingSphere();
+    R.anim = false;
+  }
+}
+
+/** One frame of the easing (the render loop calls it): every slot moves a share of the way to its target. */
+function stepRays(dt) {
+  if (!R.anim || !R.obj) return;
+  const f = 1 - Math.exp(-dt / RAY_EASE_S), geom = R.solid.geometry;
+  const P = geom.attributes.position.array, C = geom.attributes.color.array, Tp = R.tPos, Tc = R.tCol;
+  let left = 0;
+  for (let k = 0; k < P.length; k++) { const x = Tp[k] - P[k]; P[k] += x * f; if (Math.abs(x) > left) left = Math.abs(x); }
+  for (let k = 0; k < C.length; k++) { const x = Tc[k] - C[k]; C[k] += x * f; if (Math.abs(x) > left) left = Math.abs(x); }
+  if (left < 1e-3) { P.set(Tp); C.set(Tc); R.anim = false; }
+  geom.attributes.position.needsUpdate = geom.attributes.color.needsUpdate = true;
+  geom.computeBoundingSphere();                    // the hover's raycast tests it first
 }
 
 /** The band the panel shows decides the value; the sidebar decides material / element / value colours; a hovered
- *  panel row (R.focus) keeps its own rays bright and dims the rest. */
+ *  panel row (R.focus) keeps its own rays bright and dims the rest. Writes the colour targets; they ease in too. */
 function colourRays() {
   if (!R.cur || !R.obj) return;
-  const { g, pg } = R.cur, M = state.M, band = state.band;
+  const { g, pg } = R.cur, M = state.M, band = state.band, NR = R.geo.n_rays, S = R.segs, a = R.tCol;
   const mode = $('raymode').value;
   const aL = M.body.eps_p, aK = M.body.alpha_sw;
   const L3 = M.levels.l3, L2 = M.levels.l2;
@@ -878,41 +922,36 @@ function colourRays() {
   const [lo, hi] = R.val.ranges[band];
   const f = R.focus;
   const face = f?.startsWith('d:') ? RAY_FACES[f.slice(2)] : null;
-  const col = R.obj.children[0].geometry.attributes.color;
-  const a = col.array;
-  R.segs.forEach((s, k) => {
-    let rgb, alpha, alphaEnd;
-    if (s.kind === 'sun') {
-      rgb = linearRgb('#ffd23f');
-      alpha = alphaEnd = !f || f === 'direct' ? 1 : 0.08;
-    } else {
-      const c = g.code[s.j * g.n + pg], hit = c !== R.geo.code.sky;
-      const m = hit ? c & 15 : skyMat, e = hit ? c >> 4 : skyElem;
-      if (mode === 'mat') rgb = linearRgb(L3.colors[m]);
-      else if (mode === 'elem') rgb = linearRgb(L2.colors[e]);
-      else {
-        const val = rayValue(s.j);
-        const x = band === 'lw' ? val.lw : band === 'sw' ? val.sw : aL * val.lw + aK * val.sw;
-        rgb = linearRgb(rayColour(band, (x - lo) / (hi - lo)));
-      }
-      // brighter where the body weighs the ray more (sideways rays: F 0.22 faces; up/down: 0.06)
-      let w = 0.45 + 0.55 * R.w[s.j] / R.wMax;
-      if (f) {
-        let on = 0;
-        if (f.startsWith('m:')) on = +f.slice(2) === m ? 1 : 0;
-        else if (f.startsWith('e:')) on = +f.slice(2) === e ? 1 : 0;
-        else if (face) {
-          const d = R.geo.directions[s.j];
-          on = Math.max(0, d[0] * face[0] + d[1] * face[1] + d[2] * face[2]);
-        }
-        w = on > 0 ? 0.25 + 0.75 * on : 0.035;
-      }
-      alpha = s.kind === 'leg' ? 0.8 * w : w;
-      alphaEnd = (s.kind === 'ray' && !hit) || (s.kind === 'leg' && s.sky) ? 0 : alpha;
+  for (let j = 0; j < NR; j++) {
+    const c = g.code[j * g.n + pg], hit = c !== R.geo.code.sky;
+    const m = hit ? c & 15 : skyMat, e = hit ? c >> 4 : skyElem;
+    let rgb;
+    if (mode === 'mat') rgb = linearRgb(L3.colors[m]);
+    else if (mode === 'elem') rgb = linearRgb(L2.colors[e]);
+    else {
+      const val = rayValue(j);
+      const x = band === 'lw' ? val.lw : band === 'sw' ? val.sw : aL * val.lw + aK * val.sw;
+      rgb = linearRgb(rayColour(band, (x - lo) / (hi - lo)));
     }
-    a.set([...rgb, alpha, ...rgb, alphaEnd], k * 8);
-  });
-  col.needsUpdate = true;
+    // brighter where the body weighs the ray more (sideways rays: F 0.22 faces; up/down: 0.06)
+    let w = 0.45 + 0.55 * R.w[j] / R.wMax;
+    if (f) {
+      let on = 0;
+      if (f.startsWith('m:')) on = +f.slice(2) === m ? 1 : 0;
+      else if (f.startsWith('e:')) on = +f.slice(2) === e ? 1 : 0;
+      else if (face) {
+        const d = R.geo.directions[j];
+        on = Math.max(0, d[0] * face[0] + d[1] * face[1] + d[2] * face[2]);
+      }
+      w = on > 0 ? 0.25 + 0.75 * on : 0.035;
+    }
+    a.set([...rgb, w, ...rgb, hit ? w : 0], j * 8);                         // escaping: fades out along its stub
+    const leg = S[NR + j], wl = leg.on ? 0.8 * w : 0;
+    a.set([...rgb, wl, ...rgb, leg.sky ? 0 : wl], (NR + j) * 8);
+  }
+  const sunA = S[2 * NR].on ? (!f || f === 'direct' ? 1 : 0.08) : 0;
+  a.set([...linearRgb('#ffd23f'), sunA, ...linearRgb('#ffd23f'), sunA], 2 * NR * 8);
+  R.anim = true;
 }
 
 function setRayFocus(key) {
@@ -960,8 +999,9 @@ function renderRayNote() {
   el.textContent = `${nHit} of ${NR} rays reach a surface (nearest ${f1(near)} m, median ${f1(med)} m); ` +
     `${NR - nHit} escape to the sky${nMir ? `; ${nMir} ${nMir === 1 ? 'lands' : 'land'} on glass or water, ` +
     `drawn with a second segment to what the mirror shows` : ''}. ` +
-    'Brighter rays weigh more for a standing body. Hover a row in the panel to pick out its rays, or a ray for ' +
-    'what it brings. Rays below the MRT surface show faintly; lower its opacity to see them in full.';
+    'Brighter rays weigh more for a standing body. Drag the marker (its ring or centre) to move the standpoint. ' +
+    'Hover a row in the panel to pick out its rays, or a ray for what it brings. Rays below the MRT surface show ' +
+    'faintly; lower its opacity to see them in full.';
 }
 
 /** The ray under the pointer, as hover text (null: none). */
@@ -975,10 +1015,9 @@ function rayHoverText(clientX, clientY) {
   const P = V.positions, i = R.cur.i;
   const dCam = camera.position.distanceTo(new THREE.Vector3(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]));
   raycaster.params.Line.threshold = Math.max(0.05, dCam * 0.004);
-  const hit = raycaster.intersectObject(R.solid, false)[0];
-  if (!hit) return null;
+  const hit = raycaster.intersectObject(R.solid, false).find((h) => R.segs[Math.floor(h.index / 2)]?.on);
+  if (!hit) return null;                           // slots not in use are collapsed points: never a hover
   const s = R.segs[Math.floor(hit.index / 2)];
-  if (!s) return null;
   if (s.kind === 'sun') return '<i>Direct sun</i> the beam reaches the body (see the panel)';
   const { M, B, band } = state, { g, pg } = R.cur;
   const c = g.code[s.j * g.n + pg], val = rayValue(s.j);
@@ -1326,6 +1365,7 @@ function buildViewer(mrtGltf, meta) {
     renderer, scene, camera, controls, cloud, mrtMesh, mrtMat, marker, meta,
     positions: mrtGeom.attributes.position.array,
     raycaster: new THREE.Raycaster(), pointer: new THREE.Vector2(), mesh: null,
+    markerTarget: new THREE.Vector3(),
   });
 
   // Framing, fog and zoom limits all key off the MRT surface's own size rather than fixed
@@ -1352,8 +1392,17 @@ function buildViewer(mrtGltf, meta) {
   new ResizeObserver(onResize).observe(canvas);
   onResize();
 
+  let last = performance.now();
   renderer.setAnimationLoop(() => {
+    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
     controls.update();
+    // A dragged marker eases to its standpoint at the same rate as the rays' origin, so the two stay together.
+    if (!marker.position.equals(V.markerTarget)) {
+      marker.position.lerp(V.markerTarget, 1 - Math.exp(-dt / RAY_EASE_S));
+      if (marker.position.distanceTo(V.markerTarget) < 1e-3) marker.position.copy(V.markerTarget);
+    }
+    stepRays(dt);
     if (marker.visible) {
       // Keep the marker legible from any distance -- 1.5 m is sub-pixel across a 500 m scene.
       marker.scale.setScalar(Math.max(1, camera.position.distanceTo(marker.position) / 110));
@@ -1471,12 +1520,59 @@ function pickAt(clientX, clientY) {
   return best;
 }
 
+/** Is (clientX, clientY) on the picked-standpoint marker: its centre dot or its ring band (not the ring's inside, so
+ *  an orbit drag can still start next to the standpoint)? Sizes from the ring's own radii, projected. */
+function overMarker(clientX, clientY) {
+  if (!V.marker.visible || !V.mrtMesh.visible) return false;
+  const { renderer, camera, marker } = V;
+  const rect = renderer.domElement.getBoundingClientRect();
+  const c = marker.position.clone().project(camera);
+  const q = marker.position.clone().add(new THREE.Vector3(2.9 * marker.scale.x, 0, 0)).project(camera);
+  const rOut = Math.hypot((q.x - c.x) / 2 * rect.width, (q.y - c.y) / 2 * rect.height);
+  const rIn = rOut * 2.1 / 2.9;
+  const d = Math.hypot(clientX - (rect.left + (c.x + 1) / 2 * rect.width), clientY - (rect.top + (1 - c.y) / 2 * rect.height));
+  return d <= Math.max(14, rIn * 0.35) || (d >= rIn - 6 && d <= rOut + 6);
+}
+
 function bindPointer(canvas) {
   let moved = false, downAt = null, hoverJob = 0;
+  // Dragging the marker moves the standpoint: the panel and the rays follow, the rays easing from each standpoint to
+  // the next. Grabbing it switches the orbit off for that press (a capture listener runs before OrbitControls').
+  let drag = null, dragJob = 0, dragAt = null;
+  const endDrag = (e) => {
+    const d = drag;
+    drag = null;
+    V.controls.enabled = true;
+    try { canvas.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+    canvas.style.cursor = 'move';
+    if (d.moved) { selectDone(state.picked); window.urfTrack?.('standpoint-drag'); }
+    return d.moved;
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || !overMarker(e.clientX, e.clientY)) return;
+    drag = { moved: false };
+    V.controls.enabled = false;
+    canvas.setPointerCapture(e.pointerId);
+    canvas.style.cursor = 'grabbing';
+    $('hover').classList.remove('on');
+  }, { capture: true });
+  canvas.addEventListener('pointercancel', (e) => { if (drag) endDrag(e); });
 
   canvas.addEventListener('pointerdown', (e) => { moved = false; downAt = { x: e.clientX, y: e.clientY }; });
   canvas.addEventListener('pointermove', (e) => {
     if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4) moved = true;
+    if (drag) {
+      dragAt = { x: e.clientX, y: e.clientY };
+      if (!dragJob) {
+        dragJob = requestAnimationFrame(() => {
+          dragJob = 0;
+          if (!drag) return;
+          const i = pickAt(dragAt.x, dragAt.y);
+          if (i >= 0 && i !== state.picked) { drag.moved = true; select(i, true); }
+        });
+      }
+      return;
+    }
     // Raycasting 186,860 triangles is a few milliseconds -- fine per frame, wasteful per
     // pointer event, so coalesce into one job per animation frame.
     if (hoverJob) return;
@@ -1489,7 +1585,14 @@ function bindPointer(canvas) {
         el.style.top = `${e.clientY - r.top}px`;
         el.classList.add('on');
       };
-      // the picked standpoint's rays first: they are drawn over the surface
+      // the marker first (every ray starts there), then the picked standpoint's rays: both are drawn over the surface
+      if (!e.buttons && overMarker(e.clientX, e.clientY)) {
+        el.classList.remove('wide');
+        el.innerHTML = '<i>Drag to move the standpoint</i>';
+        canvas.style.cursor = 'move';
+        place();
+        return;
+      }
       const rt = e.buttons ? null : rayHoverText(e.clientX, e.clientY);      // not while orbiting
       el.classList.toggle('wide', !!rt);
       if (rt) { el.innerHTML = rt; canvas.style.cursor = 'default'; place(); return; }
@@ -1513,28 +1616,37 @@ function bindPointer(canvas) {
   });
   canvas.addEventListener('pointerleave', () => $('hover').classList.remove('on'));
   canvas.addEventListener('pointerup', (e) => {
+    if (drag && endDrag(e)) return;          // the marker was dragged; a press on it without moving is a click
     if (moved) return;                       // an orbit drag, not a click
     const i = pickAt(e.clientX, e.clientY);
     if (i >= 0) { select(i); window.urfTrack?.('standpoint-click'); }   // visits.js; absent = no-op
   });
 }
 
-function select(i) {
+/** Pick standpoint i. `dragging`: a step of a marker drag -- the marker and the rays ease there, the panel follows,
+ *  and what can wait (the other times, the time links, the phone drawer) waits for the drag to end (selectDone). */
+function select(i, dragging = false) {
   state.picked = i;
   const p = V.positions;
-  V.marker.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+  V.markerTarget.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+  if (!dragging) V.marker.position.copy(V.markerTarget);
   V.marker.visible = true;
   $('hint').classList.add('gone');
   $('panel').classList.remove('empty');
   $('panel-body').hidden = false;
   renderPanel();
+  renderGlintRays(i);
+  renderRays(i, dragging);
+  if (dragging) return;
+  selectDone(i);
+  // Phone: the budget is behind a drawer, so a tap on the surface brings it up.
+  if (drawersActive()) openDrawer('panel');
+}
+
+function selectDone(i) {
   renderHistory(i);
   updateSlotLinks();
   ensureHistory().then(ensureComfort);      // the material switch needs both; small, fetched once
-  renderGlintRays(i);
-  renderRays(i);
-  // Phone: the budget is behind a drawer, so a tap on the surface brings it up.
-  if (drawersActive()) openDrawer('panel');
 }
 
 /* ---------------------------------------------------------------- panel */

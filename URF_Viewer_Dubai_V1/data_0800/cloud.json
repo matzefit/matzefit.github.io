@@ -1,0 +1,152 @@
+{
+  "format": "urf-cloud/1",
+  "n_points": 5338483,
+  "bin": "cloud.bin",
+  "bin_bytes": 74738762,
+  "bytes_per_point": 14.0,
+  "blocks": [
+    {
+      "name": "pos",
+      "dtype": "uint16",
+      "offset": 0,
+      "length": 32030898,
+      "cols": 3,
+      "note": "quantised to bbox: xyz = bbox_lo + pos/65535 * bbox_span",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "rgb",
+      "dtype": "uint8",
+      "offset": 32030898,
+      "length": 16015449,
+      "cols": 3,
+      "note": "true colour, sRGB",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "material",
+      "dtype": "uint8",
+      "offset": 48046347,
+      "length": 5338483,
+      "cols": 1,
+      "note": "index into levels.l3.labels of manifest.json",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "element",
+      "dtype": "uint8",
+      "offset": 53384830,
+      "length": 5338483,
+      "cols": 1,
+      "note": "index into levels.l2.labels of manifest.json",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "temp",
+      "dtype": "uint8",
+      "offset": 58723313,
+      "length": 5338483,
+      "cols": 1,
+      "note": "surface temperature, degC = bias + temp*scale",
+      "scale": 0.05474151922871384,
+      "bias": 30.395115417383863
+    },
+    {
+      "name": "svf",
+      "dtype": "uint8",
+      "offset": 64061796,
+      "length": 5338483,
+      "cols": 1,
+      "note": "cosine-weighted sky view factor, 0-1 = svf/255",
+      "scale": null,
+      "bias": null
+    },
+    {
+      "name": "sw",
+      "dtype": "uint8",
+      "offset": 69400279,
+      "length": 5338483,
+      "cols": 1,
+      "note": "reflected shortwave, W/m2 = sw * scale",
+      "scale": 0.6361408248602174,
+      "bias": 0.0
+    }
+  ],
+  "bbox_lo": [
+    -1412.0769997558593,
+    -739.1368168945312,
+    -214.1385876159668
+  ],
+  "bbox_span": [
+    1870.8595155029336,
+    1455.358999450684,
+    140.42697756195105
+  ],
+  "origin_enu": [
+    42.09129558130004,
+    100.53275450529654,
+    -212.64300537109375
+  ],
+  "voxel_m": 0.94875,
+  "source_points": 48443588,
+  "clip_percentile": 0.1,
+  "temperature_range_c": [
+    30.395115417383863,
+    44.35420282070589
+  ],
+  "temperature_label": "Brightness temperature (\u03b5 = 1)",
+  "sw_range_w_m2": [
+    0.0,
+    162.21591033935545
+  ],
+  "element_labels": [
+    "Roof",
+    "Facade",
+    "Ground",
+    "Vegetation",
+    "Vehicle"
+  ],
+  "material_labels": [
+    "glass",
+    "aluminium_cladding",
+    "concrete",
+    "stone_paving",
+    "asphalt_road",
+    "vegetation",
+    "grass",
+    "water",
+    "sand",
+    "vehicle",
+    "flat_roof",
+    "plaster_stucco",
+    "unclassified"
+  ],
+  "counts": {
+    "element": {
+      "Roof": 1251773,
+      "Facade": 1715299,
+      "Ground": 1234754,
+      "Vegetation": 1135070,
+      "Vehicle": 1587
+    },
+    "material": {
+      "glass": 316386,
+      "aluminium_cladding": 267,
+      "concrete": 20805,
+      "stone_paving": 75827,
+      "asphalt_road": 742833,
+      "vegetation": 865533,
+      "grass": 338237,
+      "water": 136531,
+      "sand": 480967,
+      "vehicle": 65422,
+      "flat_roof": 499683,
+      "plaster_stucco": 1615318,
+      "unclassified": 180674
+    }
+  }
+}
