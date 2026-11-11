@@ -259,6 +259,15 @@ A click draws the standpoint's 401 rays: the standing body's own rays, the ones 
 - **Hover a row of the budget** (a material, an element, a face, direct sun): its rays stay bright, the rest dim.
   A face picks its rays by their cosine to it.
 - **Hover a ray:** its material, distance, longwave and shortwave, and what it adds to the band's total.
+- **Drag the marker** (its ring or its centre; the cursor turns to "move") to move the standpoint:
+  - **What follows:** the panel follows each standpoint passed. The rays and the marker ease from one standpoint to
+    the next (time constant 70 ms), slot by slot.
+  - **Why the easing is honest:** ray j points the same way at every standpoint, so each direction's ray sweeps
+    from where it ended to where it ends now.
+  - **When it snaps:** a click still picks and snaps, and so does a move of more than 30 m.
+  - **Tiles:** near a tile's edge, the neighbouring tile is fetched ahead of the marker.
+  - **At the end:** the slower parts (over the day, the time links) update when the drag ends.
+  - **Orbiting:** a drag that starts off the marker still orbits.
 
 **Files.** Where a ray lands is the same at every time (one geometry), what it brings is the slot's:
 - `web/rays.json` + `web/rays/g_<tx>_<ty>.bin.gz`: per place and ray, the distance to the first hit, its material
