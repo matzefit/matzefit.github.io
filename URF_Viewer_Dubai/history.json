@@ -64,7 +64,7 @@
   "sky": 13,
   "glint": {
    "label": "glint",
-   "pretty": "Specular glint",
+   "pretty": "Sunlight reflected by glass and water",
    "color": "#ffd23f"
   }
  },

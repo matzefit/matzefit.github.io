@@ -12,7 +12,6 @@
 <link rel="stylesheet" href="./style.css">
 <script data-goatcounter="https://matzefit.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
-
 <script type="importmap">
 {
   "imports": {
@@ -122,11 +121,9 @@
           <span id="mrt-value">&mdash;</span><span class="unit">&deg;C</span>
           <em>mean radiant temperature</em>
         </div>
-        <dl id="readout-grid"></dl>
+        <!-- UTCI and the material switch (app.js renderComfort; web/comfort.json) -->
+        <div id="comfort" hidden></div>
       </header>
-
-      <!-- The same place at the other times it was flown (web/history.json); hidden without one. -->
-      <section id="history" hidden></section>
 
       <nav id="bands" role="tablist">
         <button type="button" data-band="comb" class="on" role="tab">Combined</button>
@@ -134,7 +131,25 @@
         <button type="button" data-band="sw" role="tab">Shortwave</button>
       </nav>
 
-      <div id="levels"></div>
+      <!-- Foldable sections, each with a one-line summary in its header; which are open is remembered
+           per browser (app.js FOLD). The materials, with their switches, come first and open. -->
+      <details class="fold" id="fold-material" open>
+        <summary><span class="ft">Contributions by material</span><span class="fs" id="sum-material"></span></summary>
+        <div id="levels-material"></div>
+      </details>
+      <details class="fold" id="fold-levels">
+        <summary><span class="ft">By direction and element</span><span class="fs" id="sum-levels"></span></summary>
+        <div id="levels"></div>
+      </details>
+      <!-- The same place at the other times it was flown (web/history.json); hidden without one. -->
+      <details class="fold" id="fold-history" hidden>
+        <summary><span class="ft">Over the day</span><span class="fs" id="sum-history"></span></summary>
+        <section id="history"></section>
+      </details>
+      <details class="fold" id="fold-details">
+        <summary><span class="ft">Details</span><span class="fs" id="sum-details"></span></summary>
+        <dl id="readout-grid"></dl>
+      </details>
 
       <footer id="panel-foot">
         <p id="formula"></p>

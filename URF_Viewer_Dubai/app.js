@@ -280,14 +280,15 @@ async function init() {
 
   loadCloud(cloudMeta);   // not awaited: the view is already interactive
   loadGlints();           // likewise; optional (older builds have no glints.json)
-  if (location.hash === '#debug') window.urfDebug = { state, V, H, CF, select };   // headless tests only
+  loadRays();             // likewise; optional (scripts/viewer/web_rays.py)
+  if (location.hash === '#debug') window.urfDebug = { state, V, H, CF, R, select, setRayFocus };   // headless tests only
   await loadHistoryMeta();
   if (CELL >= 0) openCell(CELL);   // arrived from another time's link: same place, this time
 }
 
 /* ------------------------------------------------------ history over the day */
 
-/* The same place at every time it was flown (scripts/web_history.py -> web/history.json, history.bin).
+/* The same place at every time it was flown (scripts/viewer/web_history.py -> web/history.json, history.bin).
  * All slots share one standpoint lattice; a slot's rows are its lattice cells in order, so a cell maps
  * to a row by binary search in that slot's sorted cell list. history.json (8 kB) is read at start, the
  * 13 MB history.bin only the first time a standpoint is picked. */
@@ -306,7 +307,7 @@ async function loadHistoryMeta() {
     const stale = meta.slots.filter((s, k) => stamps[k]?.generated !== s.generated).map((s) => s.dir);
     if (here < 0 || meta.slots[here].n_points !== state.N || meta.slots.length < 2 || stale.length) {
       console.warn(`history.json does not match the viewer data (${stale.join(', ') || HERE}) -- ` +
-                   'history off; rerun scripts/web_history.py');
+                   'history off; rerun scripts/viewer/web_history.py');
       return;
     }
     H.meta = meta;
@@ -484,7 +485,7 @@ function renderHistory(i) {
 
 /* ------------------------------------------------- switching sources off, and UTCI */
 
-/* scripts/web_comfort.py -> web/comfort.json (8 kB: each slot's air, humidity and 10 m wind for UTCI) and
+/* scripts/viewer/web_comfort.py -> web/comfort.json (8 kB: each slot's air, humidity and 10 m wind for UTCI) and
  * comfort.bin (each place's view weight per material, fetched with the first pick). Switching a source off
  * replaces what it sends the body by what a surface at air temperature that reflects no sunlight would send:
  *   S_str' = S_str - (a_l l3_lw_k + a_k l3_sw_k) + a_l W_k sigma T_air^4,
@@ -584,7 +585,7 @@ function renderComfort(i) {
   if (r.unknown) ensureHistory().then(ensureComfort).then(() => { if (state.picked === i) renderComfort(i); });
 }
 
-/* Where each standpoint's glint comes from (scripts/glint_sources.py): per standpoint row, the
+/* Where each standpoint's glint comes from (scripts/viewer/glint_sources.py): per standpoint row, the
  * glass/water patches whose mirrored sunbeam reaches it, strongest first, with the W/m2 each
  * delivers to the body. A click on a lit standpoint draws a line to each; the "Glint sources"
  * layer shows every patch, coloured by what it delivers over the whole grid. */
@@ -669,6 +670,334 @@ function renderGlintRays(i) {
   for (const c of rays.children) c.renderOrder = 998;
   V.glintRays = rays;
   V.scene.add(rays);
+}
+
+/* --------------------------------------------- the picked standpoint's own rays */
+
+/* scripts/viewer/web_rays.py: the standing body's 401 rays at every standpoint -- the attribution's own rays, so binned by
+ * material they give the panel's material bars (checked there). Where a ray lands (distance, material, element, and
+ * the mirrored leg where glass or water mirrors it) is shared by every slot: web/rays.json + web/rays/g_<tx>_<ty>.bin.
+ * What it brings (longwave, shortwave) is the slot's: <data>/rays.json + <data>/rays/v_<tx>_<ty>.bin. Both are cut
+ * into 64 m tiles of the shared lattice; a pick fetches one of each (~1 MB). Rays that escape carry the sky's
+ * longwave and the diffuse shortwave, the same for every such ray, and are drawn as short fading stubs. */
+const R = { geo: null, val: null, tiles: new Map(), cur: null, focus: null, obj: null, segs: null };
+const RAY_SKY_LEN = 8;           // m: an escaping ray's stub
+const RAY_LEG_SKY_LEN = 20;      // m: a mirrored leg that escapes
+const RAY_SUN_LEN = 60;          // m: the direct beam
+const RAY_FACES = { East: [1, 0, 0], West: [-1, 0, 0], North: [0, 1, 0], South: [0, -1, 0], Up: [0, 0, 1], Down: [0, 0, -1] };
+const enuToView = (x, y, z) => [x, z, -y];
+// Ray colours by value: inferno from 0.18 up, because its black end vanishes against the dark stage (YlOrRd whole).
+const rayCmap = (band) => (band === 'sw' ? ['YlOrRd', 0] : ['inferno', 0.18]);
+const rayColour = (band, t) => {
+  const [name, t0] = rayCmap(band);
+  return sampleCmap(name, t0 + (1 - t0) * Math.max(0, Math.min(1, t)));
+};
+
+async function loadRays() {
+  try {
+    const [g, v] = await Promise.all([
+      fetch('./rays.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${DATA}rays.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]);
+    if (!g || !v) return;                          // not built for this slot: no rays, nothing else changes
+    if (g.format !== 'urf-rays-geometry/2' || v.format !== 'urf-rays-values/1') {
+      console.warn(`rays: unknown format ${g.format} / ${v.format} -- rays off`);
+      return;
+    }
+    if (v.attribution_generated !== state.M.generated || v.geometry_generated !== g.generated || v.n_rows !== state.N) {
+      console.warn('rays.json is from another build of the attribution or the geometry -- rays off; rerun scripts/viewer/web_rays.py');
+      return;
+    }
+    R.geo = g;
+    R.val = v;
+    R.dirs = new Float32Array(g.n_rays * 3);       // ENU -> the viewer's (e, u, -n)
+    g.directions.forEach((d, j) => R.dirs.set(enuToView(d[0], d[1], d[2]), j * 3));
+    R.w = Float32Array.from(g.ray_weights);
+    R.wMax = Math.max(...R.w);
+    $('rays-grp').hidden = false;
+    document.body.classList.add('has-rays');
+    updateRayLegend();
+    if (state.picked >= 0) renderRays(state.picked);
+  } catch (err) {
+    console.warn(err);
+  }
+}
+
+/** Typed arrays one after another out of a tile, in the layout rays.json lists. */
+function takeFrom(buf) {
+  let o = 0;
+  const take = (T, count) => {
+    const a = new T(buf.slice(o, o + count * T.BYTES_PER_ELEMENT));
+    o += count * T.BYTES_PER_ELEMENT;
+    return a;
+  };
+  take.done = () => { if (o !== buf.byteLength) throw new Error(`ray tile: ${buf.byteLength - o} bytes left over`); };
+  return take;
+}
+
+function loadRayTiles(key) {
+  const gi = R.geo.tiles[key], nv = R.val.tiles[key];
+  if (!gi || !nv) return Promise.resolve(null);
+  if (!R.tiles.has(key)) {
+    const NR = R.geo.n_rays;
+    R.tiles.set(key, Promise.all([
+      fetchData(`g_${key}.bin`, () => {}, './rays/'),
+      fetchData(`v_${key}.bin`, () => {}, `${DATA}rays/`),
+    ]).then(([gb, vb]) => {
+      const [n, m] = gi;
+      let take = takeFrom(gb);
+      const cells = take(Uint32Array, n);
+      const lo = take(Uint8Array, NR * n), hi = take(Uint8Array, NR * n);   // the distance code as two byte planes
+      const dist = new Uint16Array(NR * n);
+      for (let k = 0; k < dist.length; k++) dist[k] = lo[k] | (hi[k] << 8);
+      const g = { n, cells, dist, legStart: take(Uint32Array, n + 1),
+                  legDist: take(Uint16Array, m), legRay: take(Uint16Array, m), legOct: take(Int16Array, 2 * m),
+                  code: take(Uint8Array, NR * n) };
+      take.done();
+      take = takeFrom(vb);
+      const v = { n: nv, rows: take(Uint32Array, nv), cells: take(Uint32Array, nv), lw: take(Uint8Array, NR * nv),
+                  sw: take(Uint8Array, NR * nv), flags: take(Uint8Array, NR * nv) };
+      take.done();
+      return { g, v };
+    }).catch((err) => { console.error(err); R.tiles.delete(key); return null; }));
+  }
+  return R.tiles.get(key);
+}
+
+function clearRays() {
+  if (!R.obj) return;
+  V.scene.remove(R.obj);
+  R.obj.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
+  R.obj = null;
+}
+
+/** Draw the rays of standpoint `i` (-1: none). The tile may still be on its way; a newer pick wins. */
+async function renderRays(i) {
+  clearRays();
+  R.cur = null;
+  renderRayNote();
+  if (!R.geo || i < 0) return;
+  const L = R.geo.lattice, p = V.positions, o = V.meta.origin_enu;
+  const ix = Math.round((p[i * 3] + o[0] - L.x0) / L.spacing);
+  const iy = Math.round((-p[i * 3 + 2] + o[1] - L.y0) / L.spacing);
+  const cell = ix * L.ny + iy, key = `${Math.floor(ix / R.geo.tile)}_${Math.floor(iy / R.geo.tile)}`;
+  $('ray-note').textContent = 'Loading the rays…';
+  const t = await loadRayTiles(key);
+  if (state.picked !== i) return;
+  const pv = t ? rowOf(t.v.rows, i) : -1, pg = t ? rowOf(t.g.cells, cell) : -1;
+  if (pv < 0 || pg < 0 || t.v.cells[pv] !== cell) {
+    console.warn(`no rays stored for standpoint ${i} (cell ${cell}, tile ${key})`);
+    $('ray-note').textContent = 'No rays stored for this standpoint.';
+    return;
+  }
+  R.cur = { i, g: t.g, v: t.v, pg, pv };
+  buildRays();
+  renderRayNote();
+}
+
+const rayLen = (q, fallback) => (q ? R.geo.distance.d0 * Math.exp((q - 1) * R.geo.distance.step) : fallback);
+
+function octDecode(qx, qy) {
+  let x = qx / 32767, y = qy / 32767;
+  const z = 1 - Math.abs(x) - Math.abs(y);
+  if (z < 0) [x, y] = [(1 - Math.abs(y)) * (x >= 0 ? 1 : -1), (1 - Math.abs(x)) * (y >= 0 ? 1 : -1)];
+  const s = Math.hypot(x, y, z);
+  return [x / s, y / s, z / s];
+}
+
+/** What ray j brings, in W/m2: longwave and shortwave radiance (sky values where it escapes). */
+function rayValue(j) {
+  const { g, v, pg, pv } = R.cur, V8 = R.val;
+  const hit = g.code[j * g.n + pg] !== R.geo.code.sky;
+  return {
+    hit,
+    lw: hit ? V8.lw.lo + v.lw[j * v.n + pv] * (V8.lw.hi - V8.lw.lo) / 255 : V8.sky.lw,
+    sw: hit ? v.sw[j * v.n + pv] * V8.sw.hi / 255 : V8.sky.sw,
+  };
+}
+
+/** Segments: one per ray (standpoint -> first hit, or a fading stub to the sky), one per traced mirror (the leg off
+ *  the glass or water), and the direct beam when the body sees the sun. Colours are set by colourRays. */
+function buildRays() {
+  const { i, g, v, pg, pv } = R.cur, NR = R.geo.n_rays;
+  const P = V.positions, ox = P[i * 3], oy = P[i * 3 + 1], oz = P[i * 3 + 2];
+  const pos = [], segs = [];
+  const ends = new Float32Array(NR * 3);
+  for (let j = 0; j < NR; j++) {
+    const len = rayLen(g.dist[j * g.n + pg], RAY_SKY_LEN);
+    const e = [ox + R.dirs[j * 3] * len, oy + R.dirs[j * 3 + 1] * len, oz + R.dirs[j * 3 + 2] * len];
+    ends.set(e, j * 3);
+    pos.push(ox, oy, oz, ...e);
+    segs.push({ j, kind: 'ray', len });
+  }
+  for (let k = g.legStart[pg]; k < g.legStart[pg + 1]; k++) {
+    const j = g.legRay[k];
+    if (!(v.flags[j * v.n + pv] & 1)) continue;   // this slot's engine did not trace the mirror (no own emission)
+    const d = enuToView(...octDecode(g.legOct[2 * k], g.legOct[2 * k + 1]));
+    const len = rayLen(g.legDist[k], RAY_LEG_SKY_LEN);
+    const h = ends.subarray(j * 3, j * 3 + 3);
+    pos.push(h[0], h[1], h[2], h[0] + d[0] * len, h[1] + d[1] * len, h[2] + d[2] * len);
+    segs.push({ j, kind: 'leg', len, sky: !g.legDist[k] });
+  }
+  const sun = R.val.sun_enu;
+  if (sun && state.B.sunlit.at(i)) {
+    const d = enuToView(...sun);
+    pos.push(ox, oy, oz, ox + d[0] * RAY_SUN_LEN, oy + d[1] * RAY_SUN_LEN, oz + d[2] * RAY_SUN_LEN);
+    segs.push({ j: -1, kind: 'sun' });
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(segs.length * 8), 4));
+  // Two passes over one geometry: depth-tested at full strength, and faintly through everything, so a ray behind
+  // a facade or under the MRT surface (every downward ray) is still there, just quieter.
+  const solid = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true,
+                                                                          depthWrite: false }));
+  const xray = new THREE.LineSegments(geom, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.45, depthTest: false, depthWrite: false }));
+  solid.renderOrder = 996;
+  xray.renderOrder = 1000;      // over the picked-standpoint marker (999), which would hide the shortest rays
+  const grp = new THREE.Group();
+  grp.add(solid, xray);
+  grp.visible = $('l-rays').checked;
+  R.obj = grp;
+  R.solid = solid;
+  R.segs = segs;
+  V.scene.add(grp);
+  colourRays();
+}
+
+/** The band the panel shows decides the value; the sidebar decides material / element / value colours; a hovered
+ *  panel row (R.focus) keeps its own rays bright and dims the rest. */
+function colourRays() {
+  if (!R.cur || !R.obj) return;
+  const { g, pg } = R.cur, M = state.M, band = state.band;
+  const mode = $('raymode').value;
+  const aL = M.body.eps_p, aK = M.body.alpha_sw;
+  const L3 = M.levels.l3, L2 = M.levels.l2;
+  const skyMat = L3.labels.length - 1, skyElem = L2.labels.indexOf('Sky');
+  const [lo, hi] = R.val.ranges[band];
+  const f = R.focus;
+  const face = f?.startsWith('d:') ? RAY_FACES[f.slice(2)] : null;
+  const col = R.obj.children[0].geometry.attributes.color;
+  const a = col.array;
+  R.segs.forEach((s, k) => {
+    let rgb, alpha, alphaEnd;
+    if (s.kind === 'sun') {
+      rgb = linearRgb('#ffd23f');
+      alpha = alphaEnd = !f || f === 'direct' ? 1 : 0.08;
+    } else {
+      const c = g.code[s.j * g.n + pg], hit = c !== R.geo.code.sky;
+      const m = hit ? c & 15 : skyMat, e = hit ? c >> 4 : skyElem;
+      if (mode === 'mat') rgb = linearRgb(L3.colors[m]);
+      else if (mode === 'elem') rgb = linearRgb(L2.colors[e]);
+      else {
+        const val = rayValue(s.j);
+        const x = band === 'lw' ? val.lw : band === 'sw' ? val.sw : aL * val.lw + aK * val.sw;
+        rgb = linearRgb(rayColour(band, (x - lo) / (hi - lo)));
+      }
+      // brighter where the body weighs the ray more (sideways rays: F 0.22 faces; up/down: 0.06)
+      let w = 0.45 + 0.55 * R.w[s.j] / R.wMax;
+      if (f) {
+        let on = 0;
+        if (f.startsWith('m:')) on = +f.slice(2) === m ? 1 : 0;
+        else if (f.startsWith('e:')) on = +f.slice(2) === e ? 1 : 0;
+        else if (face) {
+          const d = R.geo.directions[s.j];
+          on = Math.max(0, d[0] * face[0] + d[1] * face[1] + d[2] * face[2]);
+        }
+        w = on > 0 ? 0.25 + 0.75 * on : 0.035;
+      }
+      alpha = s.kind === 'leg' ? 0.8 * w : w;
+      alphaEnd = (s.kind === 'ray' && !hit) || (s.kind === 'leg' && s.sky) ? 0 : alpha;
+    }
+    a.set([...rgb, alpha, ...rgb, alphaEnd], k * 8);
+  });
+  col.needsUpdate = true;
+}
+
+function setRayFocus(key) {
+  if (R.focus === key) return;
+  R.focus = key;
+  colourRays();
+}
+
+function updateRayLegend() {
+  if (!R.val) return;
+  const val = $('raymode').value === 'val';
+  $('ray-legend').hidden = !val;
+  if (!val) return;
+  const band = state.band, [lo, hi] = R.val.ranges[band];
+  const stops = Array.from({ length: 13 }, (_, k) => {
+    const [r, g, b] = rayColour(band, k / 12);
+    return `rgb(${r | 0},${g | 0},${b | 0}) ${(k / 12 * 100).toFixed(1)}%`;
+  });
+  $('ray-ramp').style.background = `linear-gradient(90deg, ${stops.join(',')})`;
+  $('ray-lo').textContent = `${f0(lo)} W/m²`;
+  $('ray-hi').textContent = `${f0(hi)} W/m²`;
+  $('ray-band').textContent = { comb: 'Combined, a_l·longwave + a_k·shortwave', lw: 'Longwave',
+                                sw: 'Shortwave (sunlight reflected or scattered)' }[band];
+}
+
+function renderRayNote() {
+  const el = $('ray-note');
+  if (!R.geo) return;
+  if (!R.cur) { el.textContent = state.picked < 0 ? 'Pick a standpoint to draw its rays.' : ''; $('n-rays').textContent = ''; return; }
+  const { g, v, pg, pv } = R.cur, NR = R.geo.n_rays;
+  let nHit = 0, nMir = 0, near = Infinity;
+  const lens = [];
+  for (let j = 0; j < NR; j++) {
+    const q = g.dist[j * g.n + pg];
+    if (!q) continue;
+    nHit++;
+    const len = rayLen(q, 0);
+    lens.push(len);
+    near = Math.min(near, len);
+    if (v.flags[j * v.n + pv] & 1) nMir++;
+  }
+  lens.sort((x, y) => x - y);
+  const med = lens.length ? lens[lens.length >> 1] : NaN;
+  $('n-rays').textContent = `${nHit} hit`;
+  el.textContent = `${nHit} of ${NR} rays reach a surface (nearest ${f1(near)} m, median ${f1(med)} m); ` +
+    `${NR - nHit} escape to the sky${nMir ? `; ${nMir} ${nMir === 1 ? 'lands' : 'land'} on glass or water, ` +
+    `drawn with a second segment to what the mirror shows` : ''}. ` +
+    'Brighter rays weigh more for a standing body. Hover a row in the panel to pick out its rays, or a ray for ' +
+    'what it brings. Rays below the MRT surface show faintly; lower its opacity to see them in full.';
+}
+
+/** The ray under the pointer, as hover text (null: none). */
+function rayHoverText(clientX, clientY) {
+  if (!R.obj?.visible || !R.cur) return null;
+  const { raycaster, camera, renderer, pointer } = V;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const P = V.positions, i = R.cur.i;
+  const dCam = camera.position.distanceTo(new THREE.Vector3(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]));
+  raycaster.params.Line.threshold = Math.max(0.05, dCam * 0.004);
+  const hit = raycaster.intersectObject(R.solid, false)[0];
+  if (!hit) return null;
+  const s = R.segs[Math.floor(hit.index / 2)];
+  if (!s) return null;
+  if (s.kind === 'sun') return '<i>Direct sun</i> the beam reaches the body (see the panel)';
+  const { M, B, band } = state, { g, pg } = R.cur;
+  const c = g.code[s.j * g.n + pg], val = rayValue(s.j);
+  const L3 = M.levels.l3;
+  const mat = val.hit ? (L3.pretty ?? L3.labels)[c & 15] : 'Sky';
+  const aL = M.body.eps_p, aK = M.body.alpha_sw, w = R.w[s.j];
+  const x = band === 'lw' ? val.lw : band === 'sw' ? val.sw : aL * val.lw + aK * val.sw;
+  const total = band === 'lw' ? B.e_lw.at(i)
+    : band === 'sw' ? B.e_sw_diffuse.at(i) + B.e_sw_direct.at(i) + B.e_sw_specular.at(i)
+    : aL * B.e_lw.at(i) + aK * (B.e_sw_diffuse.at(i) + B.e_sw_direct.at(i) + B.e_sw_specular.at(i));
+  const mirrored = R.cur.v.flags[s.j * R.cur.v.n + R.cur.pv] & 1;
+  const dist = f1(s.kind === 'ray' ? s.len : rayLen(g.dist[s.j * g.n + pg], 0));
+  const head = !val.hit ? '<b>Sky</b> <i>· the ray escapes</i>'
+    : s.kind === 'leg' ? `<i>Mirrored by</i> <b>${mat}</b> <i>${dist} m away; this segment points to what it mirrors</i>`
+    : `<i>Ray to</i> <b>${mat}</b> <i>${dist} m away</i>`;
+  const into = { comb: 'the absorbed S_str', lw: 'the longwave total', sw: 'the shortwave total' }[band];
+  return `${head}${mirrored ? '<br><i>glass/water: its own emission plus what it mirrors (second segment)</i>' : ''}<br>` +
+    `<i>brings</i> ${f0(val.lw)} <i>longwave</i> · ${f0(val.sw)} <i>shortwave, W/m²</i><br>` +
+    `<i>adds</i> <b>${(w * x).toFixed(2)}</b> W/m² <i>to ${into}</i> (${(100 * w * x / total).toFixed(2)} %)`;
 }
 
 async function loadCloud(meta) {
@@ -1153,8 +1482,18 @@ function bindPointer(canvas) {
     if (hoverJob) return;
     hoverJob = requestAnimationFrame(() => {
       hoverJob = 0;
-      const i = pickAt(e.clientX, e.clientY);
       const el = $('hover');
+      const place = () => {
+        const r = canvas.getBoundingClientRect();
+        el.style.left = `${e.clientX - r.left}px`;
+        el.style.top = `${e.clientY - r.top}px`;
+        el.classList.add('on');
+      };
+      // the picked standpoint's rays first: they are drawn over the surface
+      const rt = e.buttons ? null : rayHoverText(e.clientX, e.clientY);      // not while orbiting
+      el.classList.toggle('wide', !!rt);
+      if (rt) { el.innerHTML = rt; canvas.style.cursor = 'default'; place(); return; }
+      const i = pickAt(e.clientX, e.clientY);
       if (i < 0) { el.classList.remove('on'); canvas.style.cursor = 'grab'; return; }
       canvas.style.cursor = 'pointer';
       const f = state.field;
@@ -1193,6 +1532,7 @@ function select(i) {
   updateSlotLinks();
   ensureHistory().then(ensureComfort);      // the material switch needs both; small, fetched once
   renderGlintRays(i);
+  renderRays(i);
   // Phone: the budget is behind a drawer, so a tap on the surface brings it up.
   if (drawersActive()) openDrawer('panel');
 }
@@ -1233,18 +1573,20 @@ function levelRows(i, band) {
       name: L1.labels[k], color: L1.colors[k],
       value: plane,
       sub: `F ${fi.toFixed(2)} · contributes ${f1(fi * plane)} W/m²`,
+      ray: `d:${L1.labels[k]}`,                 // hover: the rays this face sees, by their cosine
     };
   });
 
-  const cat = (blockLw, blockSw, level, keyed) => level.labels.map((name, k) => ({
+  const cat = (blockLw, blockSw, level, keyed, rayKey) => level.labels.map((name, k) => ({
     name: (level.pretty ?? level.labels)[k],
     color: level.colors[k],
     value: mix(blockLw.at(i, k), blockSw.at(i, k)),
     key: keyed ? `m:${k}` : undefined,          // the material switch (state.off)
+    ray: `${rayKey}:${k}`,                      // hover: this category's rays in the view
   }));
 
-  const l2 = cat(B.l2_lw, B.l2_sw, L2);
-  const l3 = cat(B.l3_lw, B.l3_sw, L3, true).filter((r) => r.value > 0.005);
+  const l2 = cat(B.l2_lw, B.l2_sw, L2, false, 'e');
+  const l3 = cat(B.l3_lw, B.l3_sw, L3, true, 'm').filter((r) => r.value > 0.005);
   // Materials are ranked by what they actually contribute here, with sky pinned last --
   // the same ordering the notebook's figure uses.
   const skyName = (L3.pretty ?? L3.labels)[L3.labels.length - 1];
@@ -1257,8 +1599,8 @@ function levelRows(i, band) {
   const extras = [];
   if (band !== 'lw') {
     const direct = B.e_sw_direct.at(i), spec = B.e_sw_specular.at(i);
-    if (direct > 0) extras.push({ name: 'Direct sun on body', value: mix(0, direct), extra: true, key: 'direct' });
-    if (spec > 0) extras.push({ name: 'Specular glint', value: mix(0, spec), extra: true, key: 'glint' });
+    if (direct > 0) extras.push({ name: 'Direct sun on body', value: mix(0, direct), extra: true, key: 'direct', ray: 'direct' });
+    if (spec > 0) extras.push({ name: 'Sunlight reflected by glass and water', value: mix(0, spec), extra: true, key: 'glint', ray: 'glint' });
   }
 
   // Direction carries no extras: the direct beam and the glint are contributions to the
@@ -1310,7 +1652,7 @@ function renderPanel() {
     <dt>Longwave E<sub>lw</sub></dt><dd>${f1(eLw)} W/m²</dd>
     <dt>Shortwave, diffuse + reflected</dt><dd>${f1(eSwD)} W/m²</dd>
     <dt>Direct sun on body</dt><dd${zero(direct)}>${f1(direct)} W/m²</dd>
-    <dt>Specular glint</dt><dd${zero(spec)}>${spec > 0 && spec < 1 ? spec.toFixed(2) : f1(spec)} W/m²</dd>
+    <dt>Sunlight reflected by glass and water</dt><dd${zero(spec)}>${spec > 0 && spec < 1 ? spec.toFixed(2) : f1(spec)} W/m²</dd>
     ${glintFrom}
     <dt>Absorbed, S<sub>str</sub></dt><dd>${f1(flux)} W/m²</dd>
     <div class="sep"></div>
@@ -1330,7 +1672,7 @@ function renderPanel() {
       const sw = switchable && r.key, off = sw && state.off.has(r.key);
       return `
       <div class="bar-row${r.extra ? ' extra' : ''}${!irradiance && r.value / total < 0.005 ? ' muted' : ''}${
-        sw ? ' toggle' : ''}${off ? ' off' : ''}">
+        sw ? ' toggle' : ''}${off ? ' off' : ''}"${r.ray ? ` data-ray="${r.ray}"` : ''}>
         ${sw ? `<input type="checkbox" class="src-toggle" data-key="${r.key}"${off ? '' : ' checked'}
           title="Untick to replace it by a surface at air temperature" aria-label="${r.name}">` : ''}
         <span class="swatch"${r.color ? ` style="background:${r.color}"` : ''}></span>
@@ -1381,6 +1723,8 @@ function renderPanel() {
     `every standpoint look alike; F_i is on each row and is still inside MRT. Values are ` +
     `transported quantised to ~0.005 W/m², so shares may round by a tenth.`;
   renderComfort(i);
+  colourRays();            // the band may have changed
+  updateRayLegend();
 }
 
 /* --------------------------------------------------------------- chrome */
@@ -1474,6 +1818,13 @@ function buildChrome() {
 
   $('l-cloud').addEventListener('change', (e) => { if (V.cloud) V.cloud.pts.visible = e.target.checked; });
   $('l-glint').addEventListener('change', (e) => { if (V.glintLayer) V.glintLayer.visible = e.target.checked; });
+  $('l-rays').addEventListener('change', (e) => { if (R.obj) R.obj.visible = e.target.checked; });
+  $('raymode').addEventListener('change', () => { colourRays(); updateRayLegend(); });
+  // Hovering a row of the budget picks out its rays in the view (material, element, a face's cosine, the sun beam).
+  $('panel-body').addEventListener('pointerover', (e) => {
+    setRayFocus(e.target.closest?.('.bar-row[data-ray]')?.dataset.ray ?? null);
+  });
+  $('panel-body').addEventListener('pointerleave', () => setRayFocus(null));
   $('l-mrt').addEventListener('change', (e) => {
     V.mrtMesh.visible = e.target.checked;
     if (!e.target.checked) $('hover').classList.remove('on');
@@ -1562,6 +1913,7 @@ function buildChrome() {
       state.picked = -1;
       V.marker.visible = false;
       renderGlintRays(-1);
+      renderRays(-1);
       updateSlotLinks();
       $('panel').classList.add('empty');
       $('panel-body').hidden = true;

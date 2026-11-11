@@ -140,7 +140,12 @@ input[type=range]::-moz-range-thumb {
 
 /* ---------- legends ---------- */
 
-#legend-bar, #cloud-ramp { height: 9px; border-radius: 3px; border: 1px solid var(--line); }
+#legend-bar, #cloud-ramp, #ray-ramp { height: 9px; border-radius: 3px; border: 1px solid var(--line); }
+#ray-band, #ray-note { font-size: 10.5px; color: var(--faint); margin: 2px 0 0; line-height: 1.45; }
+#ray-note:empty { display: none; }
+/* a budget row picks out its rays in the view while hovered (app.js setRayFocus) */
+.has-rays .bar-row[data-ray] { border-radius: 4px; }
+.has-rays .bar-row[data-ray]:hover { background: var(--panel-2); box-shadow: 0 0 0 3px var(--panel-2); }
 .ticks {
   display: flex; justify-content: space-between;
   font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 3px;
@@ -169,6 +174,7 @@ input[type=range]::-moz-range-thumb {
   white-space: nowrap; transform: translate(12px, -50%); z-index: 5; max-width: 260px;
 }
 #hover.on { opacity: 1; }
+#hover.wide { max-width: 440px; line-height: 1.45; }
 #hover b { font-weight: 600; }
 #hover i { font-style: normal; color: var(--muted); }
 
