@@ -10,8 +10,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="./style.css">
-<script data-goatcounter="https://matzefit.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
 <script type="importmap">
 {
   "imports": {
@@ -45,6 +43,24 @@
         <em id="n-glint"></em></label>
       <label class="sld"><span>Point size</span><input id="ptsize" type="range" min="4" max="60" value="18"></label>
       <label class="sld"><span>MRT opacity</span><input id="surfop" type="range" min="0" max="100" value="100"></label>
+    </section>
+
+    <!-- The picked standpoint's 401 rays (app.js renderRays; web/rays.json, scripts/viewer/web_rays.py);
+         hidden when this slot has none. -->
+    <section class="grp" id="rays-grp" hidden>
+      <h2>Rays of the picked standpoint</h2>
+      <label class="chk" title="The body's 401 rays, the same the radiation budget is summed from: each ends where it first hits a surface, or fades out where it escapes to the sky. Where glass or water mirrors a ray, a second segment shows where its mirror image comes from."><input type="checkbox" id="l-rays" checked><span>Show its rays</span><em id="n-rays"></em></label>
+      <select id="raymode" aria-label="Colour the rays by">
+        <option value="mat">Colour by material hit</option>
+        <option value="elem">Colour by element hit</option>
+        <option value="val">Colour by what each ray brings</option>
+      </select>
+      <div id="ray-legend" hidden>
+        <div id="ray-ramp"></div>
+        <div class="ticks"><span id="ray-lo"></span><span id="ray-hi"></span></div>
+        <div id="ray-band"></div>
+      </div>
+      <p id="ray-note"></p>
     </section>
 
     <section class="grp">

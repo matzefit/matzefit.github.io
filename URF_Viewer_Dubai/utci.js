@@ -1,4 +1,4 @@
-/* UTCI, the Universal Thermal Climate Index, for the viewer (written by scripts/make_utci_js.py; do not edit).
+/* UTCI, the Universal Thermal Climate Index, for the viewer (written by scripts/viewer/make_utci_js.py; do not edit).
 
    The official 6th-order polynomial approximation (Broede et al. 2012, Int J Biometeorol 56: 481-494; utci.org
    reference code), 211 terms, transcribed from pythermalcomfort 2.10.0 (MIT licence, Tartarini & Schiavon)
