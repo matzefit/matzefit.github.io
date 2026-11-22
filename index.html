@@ -95,6 +95,7 @@
     background: #fff;
     border-bottom: 1px solid var(--border);
   }
+  .project-year { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-bottom: -0.35rem; }
   .project-card h3 { font-size: 15px; font-weight: 600; line-height: 1.35; }
   .project-desc { font-size: 14px; color: var(--muted); line-height: 1.6; flex: 1; }
   .project-links { display: flex; gap: 16px; }
@@ -181,14 +182,16 @@
     <div class="projects-grid">
       <div class="project-card">
         <img class="project-thumb" src="img/rom-urban-climate.jpg" alt="Reference simulation, prediction and error maps of mean radiant temperature and wind speed on the UPC campus in Barcelona" width="800" height="500" loading="lazy">
+        <span class="project-year">2026</span>
         <h3>Rapid Prediction of Human Perceived Microclimate with Reduced Order Models</h3>
-        <p class="project-desc">A reduced order model trained on twelve full day multiphysics simulations of a university campus in Barcelona. From five weather inputs it predicts sub-meter maps of mean radiant temperature, air temperature and wind speed in seconds instead of hours, with errors below 1 °C for the thermal fields and 0.17 m/s for wind speed. Published in Urban Climate, 2026.</p>
+        <p class="project-desc">A reduced order model trained on twelve full day multiphysics simulations of a university campus in Barcelona. From five weather inputs it predicts sub-meter maps of mean radiant temperature, air temperature and wind speed in seconds instead of hours, with errors below 1 °C for the thermal fields and 0.17 m/s for wind speed. Published in Urban Climate.</p>
         <div class="project-links">
           <a href="https://www.sciencedirect.com/science/article/pii/S2212095526001306" class="plink" target="_blank" rel="noopener noreferrer">Paper</a>
         </div>
       </div>
       <div class="project-card">
         <img class="project-thumb" src="img/rom-microclimate.jpg" alt="CFD ground truth vs. predicted mean radiant temperature and wind speed" width="800" height="500" loading="lazy">
+        <span class="project-year">2025</span>
         <h3>Reduced Order Model for Urban Microclimate (Proof of Concept)</h3>
         <p class="project-desc">Data-driven ML surrogate replacing CFD multiphysics simulations. Random Forest and Gradient Boosting regressors trained on ANSYS Fluent outputs predict air temperature, wind speed, and mean radiant temperature at sub-meter resolution from weather station inputs. Achieves ~200× speedup over full CFD.</p>
         <div class="project-links">
@@ -198,6 +201,7 @@
       </div>
       <div class="project-card">
         <img class="project-thumb" src="img/building-function.jpg" alt="Aerial image tiles with predicted and actual building-use masks" width="800" height="500" loading="lazy">
+        <span class="project-year">2024</span>
         <h3>Building Function Classification from Aerial Imagery, NYC</h3>
         <p class="project-desc">U-Net semantic segmentation model classifying 12 building use types from NAIP RGB aerial imagery across NYC. Trained on 19k image-mask pairs derived from PLUTO land use data. Achieves IoU of 0.71 on test data.</p>
         <div class="project-links">
@@ -206,7 +210,17 @@
         </div>
       </div>
       <div class="project-card">
+        <img class="project-thumb" src="img/resnet.jpg" alt="Grid of CIFAR-10 sample images, one column per class" width="800" height="500" loading="lazy">
+        <span class="project-year">2024</span>
+        <h3>ResNet for CIFAR-10 Classification Under 5M Parameters</h3>
+        <p class="project-desc">Custom ResNet architecture for image classification on CIFAR-10, built under a strict 5M trainable parameter budget. Systematic ablation across residual block configurations, data augmentation strategies, and training hyperparameters. Final model trained for 200 epochs and evaluated on a Kaggle competition test set.</p>
+        <div class="project-links">
+          <a href="https://github.com/matzefit/DL_Sp24_Miniproject" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
         <img class="project-thumb" src="img/vistemp.jpg" alt="Street view images with semantic segmentation masks" width="800" height="500" loading="lazy">
+        <span class="project-year">2023</span>
         <h3>VisTemp: Visual Air Temperature Prediction from Street View</h3>
         <p class="project-desc">CNN model combining semantic segmentation and temperature regression on street view imagery. Trained on the Cityscapes dataset; achieves mean IoU above 0.7 and RMSE of 5.6°C. With <a href="https://varinaldi.notion.site/portfolio" target="_blank" rel="noopener noreferrer">V Rinaldi</a>.</p>
         <div class="project-links">
@@ -215,29 +229,23 @@
         </div>
       </div>
       <div class="project-card">
-        <img class="project-thumb" src="img/covid-energy.jpg" alt="Map of building energy use change by census tract, NYC" width="800" height="500" loading="lazy">
-        <h3>COVID-19 Impact on Building Energy Usage, NYC</h3>
-        <p class="project-desc">Geospatial analysis of building energy consumption changes between 2019 and 2020 across NYC census tracts. ElasticNet regression and dominance analysis identify building volume, density, and daytime population as dominant predictors. Finds significant reduction in office and school energy use attributable to stay-at-home orders.</p>
-        <div class="project-links">
-          <a href="pdfs/ElectricityUseCovid.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
-          <a href="https://github.com/matzefit/ElectricityUseCovidNYC" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
-        </div>
-      </div>
-      <div class="project-card">
-        <img class="project-thumb" src="img/resnet.jpg" alt="Grid of CIFAR-10 sample images, one column per class" width="800" height="500" loading="lazy">
-        <h3>ResNet for CIFAR-10 Classification Under 5M Parameters</h3>
-        <p class="project-desc">Custom ResNet architecture for image classification on CIFAR-10, built under a strict 5M trainable parameter budget. Systematic ablation across residual block configurations, data augmentation strategies, and training hyperparameters. Final model trained for 200 epochs and evaluated on a Kaggle competition test set.</p>
-        <div class="project-links">
-          <a href="https://github.com/matzefit/DL_Sp24_Miniproject" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
-        </div>
-      </div>
-      <div class="project-card">
         <img class="project-thumb" src="img/mold-risk.jpg" alt="Actual vs. predicted mold risk maps, NYC" width="800" height="500" loading="lazy">
+        <span class="project-year">2023</span>
         <h3>Mold Risk Prediction & Respiratory Health in NYC Buildings</h3>
         <p class="project-desc">Random Forest classifier trained on 750k NYC residential properties to predict building-level mold risk from structural characteristics, flood zone data, and 311 complaints. Derives a neighborhood-level Mold Risk Index validated against asthma ER visit rates via ElasticNet regression. Including the index improves R² from 0.59 to 0.68 for adult asthma rates.</p>
         <div class="project-links">
           <a href="pdfs/Final Report - ML For Cities-1.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
           <a href="https://github.com/bbonczak/Predicting-mold-risk-in-the-building-stock-of-NYC" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </div>
+      <div class="project-card">
+        <img class="project-thumb" src="img/covid-energy.jpg" alt="Map of building energy use change by census tract, NYC" width="800" height="500" loading="lazy">
+        <span class="project-year">2022</span>
+        <h3>COVID-19 Impact on Building Energy Usage, NYC</h3>
+        <p class="project-desc">Geospatial analysis of building energy consumption changes between 2019 and 2020 across NYC census tracts. ElasticNet regression and dominance analysis identify building volume, density, and daytime population as dominant predictors. Finds significant reduction in office and school energy use attributable to stay-at-home orders.</p>
+        <div class="project-links">
+          <a href="pdfs/ElectricityUseCovid.pdf" class="plink pdf" target="_blank" rel="noopener noreferrer">Report</a>
+          <a href="https://github.com/matzefit/ElectricityUseCovidNYC" class="plink repo" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
       
