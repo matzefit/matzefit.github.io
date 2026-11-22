@@ -85,6 +85,16 @@
     border: 1px solid var(--border);
   }
   .project-card { background: var(--bg); padding: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .project-thumb {
+    display: block;
+    width: calc(100% + 3rem);
+    height: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    margin: -1.5rem -1.5rem 0.6rem;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+  }
   .project-card h3 { font-size: 15px; font-weight: 600; line-height: 1.35; }
   .project-desc { font-size: 14px; color: var(--muted); line-height: 1.6; flex: 1; }
   .project-links { display: flex; gap: 16px; }
@@ -170,6 +180,7 @@
     </div>
     <div class="projects-grid">
       <div class="project-card">
+        <img class="project-thumb" src="img/rom-microclimate.jpg" alt="CFD ground truth vs. predicted mean radiant temperature and wind speed" width="800" height="500" loading="lazy">
         <h3>Reduced Order Model for Urban Microclimate (Proof of Concept)</h3>
         <p class="project-desc">Data-driven ML surrogate replacing CFD multiphysics simulations. Random Forest and Gradient Boosting regressors trained on ANSYS Fluent outputs predict air temperature, wind speed, and mean radiant temperature at sub-meter resolution from weather station inputs. Achieves ~200× speedup over full CFD.</p>
         <div class="project-links">
@@ -178,6 +189,7 @@
         </div>
       </div>
       <div class="project-card">
+        <img class="project-thumb" src="img/building-function.jpg" alt="Aerial image tiles with predicted and actual building-use masks" width="800" height="500" loading="lazy">
         <h3>Building Function Classification from Aerial Imagery, NYC</h3>
         <p class="project-desc">U-Net semantic segmentation model classifying 12 building use types from NAIP RGB aerial imagery across NYC. Trained on 19k image-mask pairs derived from PLUTO land use data. Achieves IoU of 0.71 on test data.</p>
         <div class="project-links">
@@ -186,6 +198,7 @@
         </div>
       </div>
       <div class="project-card">
+        <img class="project-thumb" src="img/vistemp.jpg" alt="Street view images with semantic segmentation masks" width="800" height="500" loading="lazy">
         <h3>VisTemp: Visual Air Temperature Prediction from Street View</h3>
         <p class="project-desc">CNN model combining semantic segmentation and temperature regression on street view imagery. Trained on the Cityscapes dataset; achieves mean IoU above 0.7 and RMSE of 5.6°C. With <a href="https://varinaldi.notion.site/portfolio" target="_blank" rel="noopener noreferrer">V Rinaldi</a>.</p>
         <div class="project-links">
@@ -194,6 +207,7 @@
         </div>
       </div>
       <div class="project-card">
+        <img class="project-thumb" src="img/covid-energy.jpg" alt="Map of building energy use change by census tract, NYC" width="800" height="500" loading="lazy">
         <h3>COVID-19 Impact on Building Energy Usage, NYC</h3>
         <p class="project-desc">Geospatial analysis of building energy consumption changes between 2019 and 2020 across NYC census tracts. ElasticNet regression and dominance analysis identify building volume, density, and daytime population as dominant predictors. Finds significant reduction in office and school energy use attributable to stay-at-home orders.</p>
         <div class="project-links">
@@ -202,6 +216,7 @@
         </div>
       </div>
       <div class="project-card">
+        <img class="project-thumb" src="img/resnet.jpg" alt="Grid of CIFAR-10 sample images, one column per class" width="800" height="500" loading="lazy">
         <h3>ResNet for CIFAR-10 Classification Under 5M Parameters</h3>
         <p class="project-desc">Custom ResNet architecture for image classification on CIFAR-10, built under a strict 5M trainable parameter budget. Systematic ablation across residual block configurations, data augmentation strategies, and training hyperparameters. Final model trained for 200 epochs and evaluated on a Kaggle competition test set.</p>
         <div class="project-links">
@@ -209,6 +224,7 @@
         </div>
       </div>
       <div class="project-card">
+        <img class="project-thumb" src="img/mold-risk.jpg" alt="Actual vs. predicted mold risk maps, NYC" width="800" height="500" loading="lazy">
         <h3>Mold Risk Prediction & Respiratory Health in NYC Buildings</h3>
         <p class="project-desc">Random Forest classifier trained on 750k NYC residential properties to predict building-level mold risk from structural characteristics, flood zone data, and 311 complaints. Derives a neighborhood-level Mold Risk Index validated against asthma ER visit rates via ElasticNet regression. Including the index improves R² from 0.59 to 0.68 for adult asthma rates.</p>
         <div class="project-links">
